@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android" android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:gravity="center">
+    <TextView
+        style="@style/infoStyle"
+        android:id="@+id/versionInfo"
+        android:text="当前版本号:v1.1"/>
+    <Button
+        style="@style/infoButton"
+        android:id="@+id/check"
+        android:text="检测"/>
+    <Button
+        style="@style/infoButton"
+        android:id="@+id/down"
+        android:text="下载"/>
+    <Button
+        style="@style/infoButton"
+        android:id="@+id/up"
+        android:text="升级"/>
+
+</LinearLayout>
