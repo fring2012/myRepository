@@ -24,6 +24,7 @@ import android.widget.TextView;
 
 import com.example.c.service.LoginService;
 import com.example.c.utils.PropertiesUtils;
+import com.orhanobut.logger.Logger;
 
 import java.util.Properties;
 
@@ -76,9 +77,11 @@ public class MainActivity extends AppCompatActivity {
                 CharSequence passwordText = password.getText();//获取用户输入的密码
                 if(accountText.length() == 0) {
                     hintError("请输入账号！");
+                    Logger.d("账号为空！");
                     return;
                 }
                 if(passwordText.length() == 0){
+                    Logger.d("密码为空！");
                     hintError("请输入密码！");
                     return;
                 }
@@ -87,6 +90,7 @@ public class MainActivity extends AppCompatActivity {
                 bundle.putCharSequence("account",accountText);
                 bundle.putCharSequence("password",passwordText);
                 msg.setData(bundle);
+                msg.what = 1;
                 Messenger client = new Messenger(new ClientHandler());
                 msg.replyTo = client;
                 try {
@@ -120,13 +124,13 @@ public class MainActivity extends AppCompatActivity {
         public void handleMessage(Message msg) {
             super.handleMessage(msg);
             int resultState = msg.what;
-            System.out.println("1111111111111111111111111111111"+msg.what);
+            Logger.d("接受到服务端返回："+msg.what);
+
             switch (resultState){
                 case 0:
                     hintError("账号不存在！");
                     break;
                 case 1:
-                    System.out.println("1111111111111111111111111111111");
                     Intent intent = new Intent(MainActivity.this,VersionManagerActivity.class);
                     startActivity(intent);
                     break;
@@ -141,6 +145,7 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
+        Logger.d("login界面关闭！关闭服务连接");
         unbindService(conn);
     }
     public void hintError(String msg){

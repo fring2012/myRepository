@@ -18,6 +18,8 @@ import android.widget.Button;
 import android.widget.EditText;
 
 import com.example.c.service.LoginService;
+import com.orhanobut.logger.Logger;
+
 
 public class RegisterActivity extends Activity{
     private EditText regAccount;
@@ -47,22 +49,29 @@ public class RegisterActivity extends Activity{
         register.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
+                Logger.d("点击注册！");
                 if(accessing)
                     return;
                 accessing = true;
                 CharSequence accountText = regAccount.getText();
                 if(accountText.length() == 0){
+                    accessing = false;
+                    Logger.d("注册账号为空！");
                     hintError("请输入账号！");
                     return;
                 }
                 CharSequence passwordText = regPassword.getText();
                 System.out.println(passwordText.length() == 0);
                 if(passwordText.length() == 0){
+                    accessing = false;
+                    Logger.d("密码为空！");
                     hintError("请输入密码！");
                     return;
                 }
                 CharSequence againpasswordText = againPassword.getText();
                 if(!againpasswordText.toString().equals(passwordText.toString())){
+                    accessing = false;
+                    Logger.d("两次密码不一致");
                     hintError("两次密码不一致！");
                     return;
                 }
@@ -95,12 +104,22 @@ public class RegisterActivity extends Activity{
         @Override
         public void handleMessage(Message msg) {
             super.handleMessage(msg);
-            if(msg.what != 1)
-                return;;
+            Logger.d("接收到服务端返回："+msg.what);
+            if(msg.what == 0) {
+                hintError("账号已经存在！");
+                accessing = false;
+                return;
+            }
             Intent intent = new Intent(RegisterActivity.this,MainActivity.class);
             intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK);
             startActivity(intent);
-
         }
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        Logger.d("register关闭，关闭服务连接");
+        unbindService(conn);
     }
 }

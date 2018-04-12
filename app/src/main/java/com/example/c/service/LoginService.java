@@ -14,6 +14,8 @@ import android.support.annotation.RequiresApi;
 import android.util.ArrayMap;
 import android.util.Log;
 
+import com.orhanobut.logger.Logger;
+
 @RequiresApi(api = Build.VERSION_CODES.KITKAT)
 public class LoginService extends Service{
     private ArrayMap<String,String> accountArray = new ArrayMap<String,String>();
@@ -23,17 +25,21 @@ public class LoginService extends Service{
     private final int LOGIN_SUCCESS =1;//登录成功
     private final int IS_LOGIN = 1;
     private final int IS_REGISTER =2;
+    private final int ACCOUNT_ALREADY_EXIST = 0;
 
 
     class LonginHandler extends Handler{
         @Override
         public void handleMessage(Message msg) {
             super.handleMessage(msg);
+            Logger.d("接收到客户端请求参数:"+msg.what);
             switch (msg.what){
                 case IS_LOGIN:
+                    Logger.d("执行登录验证！");
                     loginService(msg);
                     break;
                 case IS_REGISTER:
+                    Logger.d("执行注册服务！");
                     registerService(msg);
                     break;
             }
@@ -42,6 +48,7 @@ public class LoginService extends Service{
     @Override
     public void onCreate() {
         super.onCreate();
+        Logger.d("创建服务！");
         accountArray.put("zhangsan","123");
     }
 
@@ -60,6 +67,7 @@ public class LoginService extends Service{
         Messenger client = msg.replyTo;
         String account = msg.getData().getCharSequence("account").toString();
         String password = accountArray.get(account);
+        Logger.d("登录服务！！"+accountArray.get("123214a"));
         if(password == null) {
             resultState = ACCOUNT_NO_EXIST;
         }else{
@@ -77,12 +85,16 @@ public class LoginService extends Service{
      * 注册服务
      */
     private void registerService(Message msg){
-        String account = msg.getData().getCharSequence("account").toString();
-        String passowrd = msg.getData().getCharSequence("password").toString();
-        accountArray.put(account,passowrd);
-        Messenger registerMessenger = msg.replyTo;
         Message message = new Message();
         message.what = 1;
+        String account = msg.getData().getCharSequence("account").toString();
+        String passowrd = msg.getData().getCharSequence("password").toString();
+        if(accountArray.get(account) != null) {
+            message.what = ACCOUNT_ALREADY_EXIST;
+        }else {
+            accountArray.put(account,passowrd);
+        }
+        Messenger registerMessenger = msg.replyTo;
         try {
             registerMessenger.send(message);
         } catch (RemoteException e) {
