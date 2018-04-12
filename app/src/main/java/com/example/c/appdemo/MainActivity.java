@@ -15,6 +15,7 @@ import android.os.Message;
 import android.os.Messenger;
 import android.os.PersistableBundle;
 import android.os.RemoteException;
+import android.provider.Settings;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.view.View;
@@ -49,8 +50,6 @@ public class MainActivity extends AppCompatActivity {
             serviceMessenger = null;
         }
     };
-    private String serverUrl;
-    private String serverPort;
 
     @SuppressLint("WrongConstant")
     @Override
@@ -58,8 +57,6 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         Properties properties = PropertiesUtils.getPropertes(getApplicationContext());
-        serverUrl = properties.getProperty("serverUrl");
-        serverPort = properties.getProperty("serverPort");
         login = (Button) findViewById(R.id.login);
         reg = findViewById(R.id.reg);
         account = (TextView) findViewById(R.id.account);
@@ -121,7 +118,7 @@ public class MainActivity extends AppCompatActivity {
         @Override
         public void handleMessage(Message msg) {
             super.handleMessage(msg);
-            int resultState = 1;
+            int resultState = msg.what;
                             //msg.what;
             Logger.d("接受到服务端返回："+msg.what);
 
@@ -131,6 +128,8 @@ public class MainActivity extends AppCompatActivity {
                     break;
                 case 1:
                     Logger.d("登录成功！");
+                    editor.putString("lastAccount",account.getText().toString());//保存最近登录的账号
+                    editor.commit();
                     Intent intent = new Intent(MainActivity.this,VersionManagerActivity.class);
                     startActivity(intent);
                     break;
