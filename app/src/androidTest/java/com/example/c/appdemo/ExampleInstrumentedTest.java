@@ -23,4 +23,10 @@ public class ExampleInstrumentedTest {
 
         assertEquals("com.example.c.appdemo", appContext.getPackageName());
     }
+    @Test
+    public void test(){
+
+    }
+
+
 }

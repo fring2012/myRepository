@@ -93,13 +93,7 @@ public class RegisterActivity extends Activity{
         Intent intent = new Intent(RegisterActivity.this, LoginService.class);
         bindService(intent,conn, Service.BIND_AUTO_CREATE);
     }
-    public void hintError(String msg){
-        new AlertDialog.Builder(this)
-                .setTitle("错误")
-                .setMessage(msg)
-                .setPositiveButton("确定",null)
-                .show();
-    }
+
     class RegisterHandler extends Handler{
         @Override
         public void handleMessage(Message msg) {
@@ -121,5 +115,12 @@ public class RegisterActivity extends Activity{
         super.onDestroy();
         Logger.d("register关闭，关闭服务连接");
         unbindService(conn);
+    }
+    public void hintError(String msg){
+        new AlertDialog.Builder(this)
+                .setTitle("错误")
+                .setMessage(msg)
+                .setPositiveButton("确定",null)
+                .show();
     }
 }
