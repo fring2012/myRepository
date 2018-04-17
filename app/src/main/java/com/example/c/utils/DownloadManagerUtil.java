@@ -7,9 +7,11 @@ import android.net.Uri;
 import android.os.Environment;
 
 import com.example.c.been.FileInfo;
+import com.orhanobut.logger.Logger;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.RandomAccessFile;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -19,11 +21,15 @@ import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
 import okio.BufferedSink;
+import okio.BufferedSource;
 import okio.Okio;
 import okio.Sink;
+import okio.Source;
 
 public class DownloadManagerUtil {
-
+    private int fileLength = 0;
+    public  final FileInfo fileInfo = new FileInfo();
+    private long finished = 0;
     //利用android自带的下载器下载
     public static void downloadAPK(String url,Context context,String filename){
         Uri uri = Uri.parse(url);
@@ -65,6 +71,99 @@ public class DownloadManagerUtil {
         });
     }
 
+    /**
+     * OkHttp设置请求头断点下载
+     */
+    public void downloadPontFile( Context context, FileInfo fileInfo){
+        final String url = fileInfo.getUrl();
+        final FileInfo _fileInfo = fileInfo;
+        Logger.d("开始下载文件："+fileInfo.getFileName() + url);
+
+        Request request = new Request.Builder().url(url).header("Range", "bytes=" + fileInfo.getFinished() + "-" + fileInfo.getLength()).build();
+        OkHttpClient client = new OkHttpClient();
+        Call call = client.newCall(request);
+
+        //异步下载
+        call.enqueue(new Callback() {
+            @Override
+            public void onFailure(Call call, IOException e) {
+
+            }
+            @Override
+            public void onResponse(Call call, Response response) throws IOException {
+                try {
+                    Logger.d("回调成功！！！！！！！！！！！！");
+                    Sink sink = null;
+                    BufferedSink bufferedSink = null;
+                    Source source = null;
+                    BufferedSource bufferedSource = null;
+                    String mSDCardPath = Environment.getExternalStorageDirectory().getPath();
+                    File dest = new File(mSDCardPath, url.substring(url.lastIndexOf("/") + 1));
+                    //删除文件
+                    if(dest.exists()){
+                        Logger.d("源文件大小:" + dest.length() + "/" + _fileInfo.getLength());
+                    }
+                    RandomAccessFile raf = new RandomAccessFile(dest, "rwd");
+                    raf.seek(_fileInfo.getFinished());//从文件已经下载完成处开始读取
+
+                    sink = Okio.sink(dest);
+                    bufferedSink = Okio.buffer(sink);
+                    source = response.body().source();
+                    bufferedSource = Okio.buffer(source);
+                    byte[] b = new byte[1024 * 8];
+                    int len = 0;
+                    Logger.d("文件已经载入：" + _fileInfo.getFinished() + "字节！开始继续下载！！！");
+                    while ((len = bufferedSource.read(b)) != -1) {
+                        if(_fileInfo.isStop())
+                            break;
+                        bufferedSink.write(b, 0, len);
+                        _fileInfo.setFinished(len);
+                    }
+                    Logger.d("源文件大小/下载字节数：" + dest.length() + "/" + _fileInfo.getFinished());
+                    Logger.d("写入结束！！！！！");
+
+                    sink.close();
+                    source.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        });
+
+
+
+
+
+    }
+
+    public FileInfo getFileInfo() {
+        return fileInfo;
+    }
+
+    /**
+     * 另外开辟一条连接获取文件长度
+     */
+    public int getFileLength(final FileInfo fileInfo){
+        Request request = new Request.Builder().url(fileInfo.getUrl()).build();
+        OkHttpClient client = new OkHttpClient();
+
+        client.newCall(request).enqueue(new Callback() {
+            @Override
+            public void onFailure(Call call, IOException e) {
+
+            }
+
+            @Override
+            public void onResponse(Call call, Response response) throws IOException {
+                fileInfo.setLength((int) response.body().contentLength());
+                Logger.d("获取文件大小:"+fileInfo.getLength());
+            }
+        });
+
+
+
+        return  fileLength;
+    }
 
 
 
@@ -76,7 +175,10 @@ public class DownloadManagerUtil {
     private Map<String, FileInfo> map = new HashMap<>();//保存正在下载的任务信息
     private static DownloadManagerUtil manger;
 
-    private DownloadManagerUtil(DbHelper helper, OnProgressListener listener) {
+    public DownloadManagerUtil(){
+
+    }
+    public DownloadManagerUtil(DbHelper helper, OnProgressListener listener) {
         this.helper = helper;
         this.listener = listener;
         db = helper.getReadableDatabase();

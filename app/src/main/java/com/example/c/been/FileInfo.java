@@ -3,8 +3,8 @@ package com.example.c.been;
 public class FileInfo {
     private String fileName;//文件名
     private String url;//下载地址
-    private int length;//文件大小
-    private int finished;//下载以已完成进度
+    private int length = 0;//文件大小
+    private int finished = 0;//下载以已完成进度
     private boolean isStop = false;//是否暂停下载
     private boolean isDownLoading = false;//是否正在下载
 
@@ -36,8 +36,8 @@ public class FileInfo {
         return finished;
     }
 
-    public void setFinished(int finished) {
-        this.finished = finished;
+    public void setFinished(int len) {
+        this.finished += len;
     }
 
     public boolean isStop() {
@@ -54,5 +54,14 @@ public class FileInfo {
 
     public void setDownLoading(boolean downLoading) {
         isDownLoading = downLoading;
+    }
+
+    public String toString(){
+        return "fileName;" + fileName
+               + "  ; url:" + url
+               + "  ; length:" + length
+               + "  ; finished:" + finished
+               + "  ; isStop:" + isStop
+               + "  ; isDownLoading:" +isDownLoading;
     }
 }

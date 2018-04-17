@@ -5,13 +5,17 @@ import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.DownloadManager;
+import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Environment;
 import android.os.Handler;
 import android.os.Message;
 import android.support.annotation.NonNull;
@@ -25,9 +29,11 @@ import android.util.Log;
 import android.view.KeyEvent;
 import android.view.View;
 import android.widget.Button;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.example.c.been.FileInfo;
 import com.example.c.been.ResultData;
 import com.example.c.utils.Codec2;
 import com.example.c.utils.DownloadManagerUtil;
@@ -38,6 +44,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
 import com.orhanobut.logger.Logger;
 
+import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 import java.security.Permission;
@@ -67,22 +74,31 @@ import okhttp3.Response;
  */
 
 public class VersionManagerActivity extends Activity {
+    private ProgressBar pb;
     private Button check;
     private Button down;
     private Button up;
+    private Button stop;
     private TextView versionInfo;
+    private FileInfo downloadFileInfo = new FileInfo();
+    private String downloadFileName = "8a3fccbc-ae3c-445a-a3b7-e28524802293.exe";
+    private int downloadFileLength = 0;
+    private DownloadManagerUtil dmu;
+    private SQLiteDatabase db;
+
+
 
     private String registerDeviceUrl;
     private TelephonyManager telephonyManager;
     private PackageManager packageManager;
-    private String deviceId = "252d1e9a82fdd0d64UC";
-    private String model;//设备型号
-    private String deviceSecret; //singn key
-    private String bakUrl;
     private String deltaUrl = "http://iotdown.mayitek.com/1522029924/2331580/8a3fccbc-ae3c-445a-a3b7-e28524802293.exe";
     private String checkVersionUrl;
     private String latestVersion;
+    //得到SD卡路径
+    private final  String DATABASE_PATH = android.os.Environment.getExternalStorageDirectory().getAbsolutePath()+"/AppDemo/";
 
+    private  String deviceSecret; //singn key
+    private  String deviceId = "252d1e9a82fdd0d64UC";
     private  final String mid = "e0aee11a";
     private  final String oem = "mi";
     private  final String models = "HM-Note4X";
@@ -95,11 +111,17 @@ public class VersionManagerActivity extends Activity {
     private  final String productId = "1522029924";
     private  final String productSecret = "23dbc31a4ec941f0b546d16deeda1c61";
 
+    private  final int RESULT_LATES_VERSION_INFO_ERROR = 0;
+    private  final int RESULT_LATES_VERSION_INFO_SUCCESS = 1;
+    private  final int DOWNLOADING_PROGRESS = 2;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_version_manager);
+        pb = (ProgressBar) findViewById(R.id.progress);
+        stop = (Button) findViewById(R.id.stop);
+
         check = (Button) findViewById(R.id.check);
         down = (Button) findViewById(R.id.down);
         up = (Button) findViewById(R.id.up);
@@ -108,6 +130,7 @@ public class VersionManagerActivity extends Activity {
         registerDeviceUrl = PropertiesUtils.getPropertes(getApplicationContext()).getProperty("registerDeviceUrl") + productId;
         telephonyManager = (TelephonyManager) getSystemService(Context.TELEPHONY_SERVICE);
         final VersionHandle versionHandle = new VersionHandle();
+        dmu = new DownloadManagerUtil();
 
         new Thread(new Runnable() {
             @RequiresApi(api = Build.VERSION_CODES.KITKAT)
@@ -115,10 +138,7 @@ public class VersionManagerActivity extends Activity {
             public void run() {
                 Logger.d("访问"+registerDeviceUrl+"注册设备!!!!!!");
                 long timestamp = new Date().getTime()/1000;
-                // @SuppressLint("MissingPermission")
-                //String deviceId = telephonyManager.getDeviceId();
                 Logger.d("设备id:"+deviceId);
-                //"252d1e9a82fdd0d64UC";
                 String signInfo = mid + productId + timestamp;
                 String sign = Codec2.getHmacMd5Str(signInfo, productSecret);
                 FormBody.Builder formBody = new FormBody.Builder();
@@ -151,12 +171,14 @@ public class VersionManagerActivity extends Activity {
                     response = client.newCall(request).execute();
                     String responseBody = response.body().string();
                     Logger.d("接收返回数据：" + responseBody);
-//                    JsonElement je = new JsonParser().parse(responseBody);
-//                    String data = mGson.toJson(je.getAsJsonObject().get("data"));
                     ResultData resultData = mGson.fromJson(responseBody,ResultData.class);
                     Logger.d("status:" + resultData.getStatus());
                     if(!"1000".equals(resultData.getStatus())){
-                        hintError(resultData.getMsg());
+                        ///
+                        //
+                        //
+                        //获取文件长度
+
                         return;
                     }
 
@@ -167,8 +189,6 @@ public class VersionManagerActivity extends Activity {
                     deviceId = deviceId.replace("\"","");
                     Logger.d("返回得到deviceSecret："+deviceSecret+'\n'+
                                 "返回得到deviceId:"+deviceId);
-                    //9dde8ff666a532f32252f8a18247755e
-                    //chang---6b5d0b97b5e78dcf9b4d534090501c29
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
@@ -187,9 +207,6 @@ public class VersionManagerActivity extends Activity {
                             System.out.println();
                             Logger.d("访问" + checkVersionUrl + "检测版本号");
                             long timestamp = new Date().getTime()/1000;
-//                            @SuppressLint("MissingPermission")
-//                            String deviceId = telephonyManager.getDeviceId();
-//                            Logger.d("设备id:"+deviceId);
                             String signInfo = deviceId + productId + timestamp;
                             String sign = Codec2.getHmacMd5Str(signInfo, deviceSecret);
                             FormBody.Builder formBody = new FormBody.Builder();
@@ -218,19 +235,29 @@ public class VersionManagerActivity extends Activity {
                             //失败弹出提示信息
                             if(!"1000".equals(resultData.getStatus())){
                                 Logger.d(responseBody);
+                                //错误信息发送给主线程！
+                                Message msg = new Message();
+                                msg.what =  RESULT_LATES_VERSION_INFO_ERROR;
+                                msg.obj = resultData.getMsg();
+                                versionHandle.sendMessage(msg);
                                 return;
                             }
+                            //解析json 字符串获取版本号
                             Map<String,Object> data = resultData.getData();
                             Map<String,Object> version = (Map<String, Object>) data.get("version");
+                            //结果信息发送给主线程
                             Message msg = new Message();
+                            msg.what = RESULT_LATES_VERSION_INFO_SUCCESS;
                             msg.obj =  version.get("versionAlias");
                             versionHandle.sendMessage(msg);
+                            //获取新版本下载地址
                             deltaUrl = ((String) version.get("deltaUrl")).replace("\"","");
-                            Logger.d("version:"+deltaUrl);
-
-//                            JsonElement je = new JsonParser().parse(response.body().string());
-//                            String version = je.getAsJsonObject().get("version").getAsString();
-//                            Logger.d("检测到当前版本号:"+version);
+                            //获取下载文件的名称
+                            downloadFileName = deltaUrl.substring(deltaUrl.lastIndexOf('/')+1);
+                            //获取下载文件大小
+                            dmu.getFileLength(downloadFileInfo);
+                            downloadFileLength = downloadFileInfo.getLength();
+                            Logger.d("version:"+deltaUrl+'\n'+"fileName:"+downloadFileName+'\n' + "downloadFileLength:"+downloadFileLength);
                         } catch (IOException e) {
                             e.printStackTrace();
                         }
@@ -244,22 +271,129 @@ public class VersionManagerActivity extends Activity {
         down.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
+                //检查是否有权限
                 if(ActivityCompat.checkSelfPermission(VersionManagerActivity.this,Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED){
                     ActivityCompat.requestPermissions(VersionManagerActivity.this, new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE},1);
                     return;
                 }
-                Uri uri = Uri.parse(deltaUrl);
-                String[] bakUrlSplit = deltaUrl.split("/");
-                //DownloadManagerUtil.downloadAPK(deltaUrl,getApplicationContext(),bakUrlSplit[bakUrlSplit.length-1]);
-                DownloadManagerUtil.downloadFile(deltaUrl,getApplicationContext(),bakUrlSplit[bakUrlSplit.length-1]);
+
+                String datapath = DATABASE_PATH+"appDemo.db";
+                File dir = new File(DATABASE_PATH);
+                if(!dir.exists())
+                    dir.mkdirs();
+                //连接数据库
+                db = SQLiteDatabase.openOrCreateDatabase(datapath,null);
+                db.execSQL("create table if not exists file_info(_id INTEGER PRIMARY KEY AUTOINCREMENT," +
+                        "file_name VARCHAR NOT NULL," +
+                        "url TEXT NOT NULL," +
+                        "length TEXT DEFAULT 0 NOT NULL ," +
+                        "finished TEXT DEFAULT 0 NOT NULL," +
+                        "is_stop INTEGER DEFAULT 0 NOT NULL," +
+                        "is_downloading INTEGER DEFAULT 0 NOT NULL) ");
+               //获取查询结果集
+                final Cursor cursor = db.query("file_info", null,"file_name = ?", new String[]{downloadFileName}, null, null,null);
+
+                if(cursor.moveToNext()) {
+                    downloadFileInfo.setFileName(cursor.getString(1));
+                    downloadFileInfo.setUrl(cursor.getString(2));
+                    downloadFileInfo.setLength(cursor.getInt(3));
+                    downloadFileInfo.setFinished(cursor.getInt(4));
+                    if (cursor.getInt(5) == 1)
+                        downloadFileInfo.setStop(true);
+                    else
+                        downloadFileInfo.setStop(false);
+
+                    if (cursor.getInt(6) == 1)
+                        downloadFileInfo.setDownLoading(true);
+                    else
+                        downloadFileInfo.setDownLoading(false);
+                    //设置进度条最大值
+                    pb.setMax(downloadFileInfo.getLength());
+                    pb.setProgress(downloadFileInfo.getFinished());
+
+                }else{
+                    ContentValues cv = new ContentValues();
+                    cv.put("file_name",downloadFileName);
+                    cv.put("url",deltaUrl);
+                    cv.put("length",downloadFileLength);
+                    db.insert("file_info",null,cv);
+                    downloadFileInfo.setFileName(downloadFileName);
+                    downloadFileInfo.setUrl(deltaUrl);
+                    pb.setMax(downloadFileInfo.getLength());
+
+                }
+                cursor.close();
+                Logger.d("要下的文件信息:" + downloadFileInfo.toString()+";开始下载文件");
+
+                //创建循环监听下载进度
+                new Thread(new Runnable() {
+                    @Override
+                    public void run() {
+                        while(true){
+                            try {
+                                Thread.sleep(1000);
+                                if(downloadFileInfo.getFinished() >= downloadFileInfo.getLength())
+                                    break;
+                                if(downloadFileInfo.isStop())
+                                    break;
+                                Message msg = new Message();
+                                msg.what = DOWNLOADING_PROGRESS;
+                                versionHandle.sendMessage(msg);
+                            } catch (InterruptedException e) {
+                                e.printStackTrace();
+                            }
+                        }
+                        ContentValues cv = new ContentValues();
+                        cv.put("finished",downloadFileInfo.getFinished());
+                        db.update("file_info",cv,"file_name=?", new String[]{downloadFileName});
+                        Cursor cursor1 =  db.query("file_info",null,"file_name=?", new String[]{downloadFileName},null,null,null);
+                        if(cursor1.moveToNext())
+                              Logger.d("保存的下载大小为：" + cursor.getInt(4) + "!!!!!!!");
+                    }
+                }).start();
+                //调用下载程序
+                dmu.downloadPontFile(getApplicationContext(),downloadFileInfo);
+                down.setVisibility(View.GONE);//将下载按钮隐藏
+                stop.setVisibility(View.VISIBLE);//显示暂停按钮
+                pb.setVisibility(View.VISIBLE);
+            }
+        });
+        stop.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                view.setVisibility(View.GONE);
+                down.setVisibility(View.VISIBLE);
+                downloadFileInfo.setStop(true);
+            }
+        });
+        up.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                ContentValues cv = new ContentValues();
+                cv.put("finished",0);
+                db.update("file_info",cv,"file_name=?", new String[]{downloadFileName});
+                String mSDCardPath = Environment.getExternalStorageDirectory().getPath();
+                File dest = new File(mSDCardPath, downloadFileName);
+                if(dest.exists())
+                    dest.delete();
             }
         });
 
+
     }
+
     private class VersionHandle extends Handler{
         @Override
         public void handleMessage(Message msg) {
             super.handleMessage(msg);
+            if(msg.what == RESULT_LATES_VERSION_INFO_ERROR){
+                hintError((String) msg.obj);
+                return;
+            }
+            if(msg.what == DOWNLOADING_PROGRESS){
+                pb.setProgress(downloadFileInfo.getFinished());
+                return;
+            }
             latestVersion = (String) msg.obj;
             versionInfo.append('\n'+"最新版本号:"+latestVersion);
         }

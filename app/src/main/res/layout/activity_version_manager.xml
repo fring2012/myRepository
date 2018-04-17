@@ -4,6 +4,12 @@
     android:layout_height="match_parent"
     android:orientation="vertical"
     android:gravity="center">
+    <ProgressBar
+        style="?android:attr/progressBarStyleHorizontal"
+        android:id="@+id/progress"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:visibility="invisible"/>
     <TextView
         style="@style/infoStyle"
         android:id="@+id/versionInfo"
@@ -18,7 +24,13 @@
         android:text="下载"/>
     <Button
         style="@style/infoButton"
+        android:id="@+id/stop"
+        android:text="暂停"
+        android:visibility="gone"/>
+    <Button
+        style="@style/infoButton"
         android:id="@+id/up"
         android:text="升级"/>
+
 
 </LinearLayout>

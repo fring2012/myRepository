@@ -12,7 +12,6 @@ public class SqliteUtil {
 
     private SqliteUtil(){
         db = SQLiteDatabase.openOrCreateDatabase("appDemo.db",null);
-
     }
     public static SqliteUtil getSqliteUtil(){
         if (sqliteUtil == null)
