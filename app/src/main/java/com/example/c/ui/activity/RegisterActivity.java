@@ -1,4 +1,4 @@
-package com.example.c.appdemo;
+package com.example.c.ui.activity;
 
 import android.app.Activity;
 import android.app.AlertDialog;
@@ -17,6 +17,7 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 
+import com.example.c.appdemo.R;
 import com.example.c.service.LoginService;
 import com.orhanobut.logger.Logger;
 

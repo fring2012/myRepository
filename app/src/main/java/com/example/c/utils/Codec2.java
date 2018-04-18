@@ -1,10 +1,14 @@
 package com.example.c.utils;
 
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.nio.charset.Charset;
 import java.security.GeneralSecurityException;
 import java.security.InvalidKeyException;
+import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
 import javax.crypto.Mac;
@@ -125,5 +129,58 @@ public class Codec2 {
         catch(InvalidKeyException e){}
         catch (NoSuchAlgorithmException e) {}
         return sEncodedString ;
+    }
+
+    public static String getMd5ByFile(File file) {
+        if (file == null ||
+                !file.exists())
+            return "";
+        FileInputStream fis = null;
+        StringBuffer buf = new StringBuffer();
+        try {
+            MessageDigest md = MessageDigest.getInstance("MD5");
+            fis = new FileInputStream(file);
+            byte[] buffer = new byte[1024 * 256];
+            int length = -1;
+            // Trace.d(logTag, "getFileMD5, GenMd5 start");
+            if (md == null) {
+                return "";
+            }
+            while ((length = fis.read(buffer)) != -1) {
+                md.update(buffer, 0, length);
+            }
+            byte[] bytes = md.digest();
+            if (bytes == null) {
+                return "";
+            }
+            for (int i = 0; i < bytes.length; i++) {
+                String md5s = Integer.toHexString(bytes[i] & 0xff);
+                if (md5s == null) {
+                    return "";
+                }
+                if (md5s.length() == 1) {
+                    buf.append("0");
+                }
+                buf.append(md5s);
+            }
+            // Trace.d(logTag, "getFileMD5, GenMd5 success! spend the time: "+ (System.currentTimeMillis() - s) + "ms");
+            String value = buf.toString();
+            int fix_num = 32 - value.length();
+            for (int i = 0; i < fix_num; i++) {
+                value = "0" + value;
+            }
+            return value;
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            return null;
+        } finally {
+            try {
+                if (fis != null) {
+                    fis.close();
+                }
+            } catch (IOException ex) {
+                ex.printStackTrace();
+            }
+        }
     }
 }

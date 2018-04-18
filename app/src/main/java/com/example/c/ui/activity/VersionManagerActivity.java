@@ -1,18 +1,13 @@
-package com.example.c.appdemo;
+package com.example.c.ui.activity;
 
 import android.Manifest;
-import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.AlertDialog;
-import android.app.DownloadManager;
 import android.content.ContentValues;
 import android.content.Context;
-import android.content.Intent;
-import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
-import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
@@ -22,10 +17,8 @@ import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.annotation.RequiresApi;
 import android.support.v4.app.ActivityCompat;
-import android.support.v4.content.ContextCompat;
 import android.telephony.TelephonyManager;
 import android.util.ArrayMap;
-import android.util.Log;
 import android.view.KeyEvent;
 import android.view.View;
 import android.widget.Button;
@@ -33,21 +26,17 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.example.c.appdemo.R;
 import com.example.c.been.FileInfo;
 import com.example.c.been.ResultData;
 import com.example.c.utils.Codec2;
 import com.example.c.utils.DownloadManagerUtil;
-import com.example.c.utils.PermissionUtil;
 import com.example.c.utils.PropertiesUtils;
 import com.google.gson.Gson;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonParser;
 import com.orhanobut.logger.Logger;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.URL;
-import java.security.Permission;
 import java.security.SecureRandom;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
@@ -55,7 +44,6 @@ import java.util.Date;
 import java.util.Map;
 
 import javax.net.ssl.HostnameVerifier;
-import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSession;
 import javax.net.ssl.SSLSocketFactory;
@@ -74,24 +62,22 @@ import okhttp3.Response;
  */
 
 public class VersionManagerActivity extends Activity {
-    private ProgressBar pb;
+    private ProgressBar downloadProgress;
+    private ProgressBar progress;
     private Button check;
     private Button down;
     private Button up;
     private Button stop;
     private TextView versionInfo;
-    private FileInfo downloadFileInfo = new FileInfo();
-    private String downloadFileName = "8a3fccbc-ae3c-445a-a3b7-e28524802293.exe";
-    private int downloadFileLength = 0;
+    private FileInfo downloadFileInfo ;
     private DownloadManagerUtil dmu;
     private SQLiteDatabase db;
-
+    final VersionHandle versionHandle = new VersionHandle();
 
 
     private String registerDeviceUrl;
     private TelephonyManager telephonyManager;
     private PackageManager packageManager;
-    private String deltaUrl = "http://iotdown.mayitek.com/1522029924/2331580/8a3fccbc-ae3c-445a-a3b7-e28524802293.exe";
     private String checkVersionUrl;
     private String latestVersion;
     //得到SD卡路径
@@ -106,7 +92,7 @@ public class VersionManagerActivity extends Activity {
     private  final String deviceType = "phone";
     private  final String sdkversion = "1.3.2_pre7";
     private  final String appversion = "1.3.2_pre7";
-    private  final String version = "7.0";
+    private  final String version = "6.0.1";
     private  final String networkType = "WIFI";
     private  final String productId = "1522029924";
     private  final String productSecret = "23dbc31a4ec941f0b546d16deeda1c61";
@@ -114,29 +100,37 @@ public class VersionManagerActivity extends Activity {
     private  final int RESULT_LATES_VERSION_INFO_ERROR = 0;
     private  final int RESULT_LATES_VERSION_INFO_SUCCESS = 1;
     private  final int DOWNLOADING_PROGRESS = 2;
+    private  final int DOWNLOADING_ERROE = 3;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_version_manager);
-        pb = (ProgressBar) findViewById(R.id.progress);
-        stop = (Button) findViewById(R.id.stop);
+        downloadProgress = (ProgressBar) findViewById(R.id.downloadProgress);
+        progress = (ProgressBar) findViewById(R.id.progress);
 
+        stop = (Button) findViewById(R.id.stop);
         check = (Button) findViewById(R.id.check);
         down = (Button) findViewById(R.id.down);
         up = (Button) findViewById(R.id.up);
         versionInfo = (TextView) findViewById(R.id.versionInfo);
-        //checkVersionUrl = PropertiesUtils.getPropertes(getApplicationContext()).getProperty("checkVersionUrl");
+
         registerDeviceUrl = PropertiesUtils.getPropertes(getApplicationContext()).getProperty("registerDeviceUrl") + productId;
         telephonyManager = (TelephonyManager) getSystemService(Context.TELEPHONY_SERVICE);
-        final VersionHandle versionHandle = new VersionHandle();
-        dmu = new DownloadManagerUtil();
 
+        dmu = new DownloadManagerUtil();
+        //连接数据库
+        String datapath = DATABASE_PATH+"appDemo.db";
+        File dir = new File(DATABASE_PATH);
+        if(!dir.exists())
+            dir.mkdirs();
+        db = SQLiteDatabase.openOrCreateDatabase(datapath,null);
         new Thread(new Runnable() {
             @RequiresApi(api = Build.VERSION_CODES.KITKAT)
             @Override
             public void run() {
                 Logger.d("访问"+registerDeviceUrl+"注册设备!!!!!!");
+
                 long timestamp = new Date().getTime()/1000;
                 Logger.d("设备id:"+deviceId);
                 String signInfo = mid + productId + timestamp;
@@ -195,6 +189,7 @@ public class VersionManagerActivity extends Activity {
 
             }
         }).start();
+
         check.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -203,12 +198,12 @@ public class VersionManagerActivity extends Activity {
                     @Override
                     public void run() {
                         try {
+
                             checkVersionUrl = "https://iotapi.adups.com/product/" + productId + "/" + deviceId + "/ota/checkVersion";
-                            System.out.println();
                             Logger.d("访问" + checkVersionUrl + "检测版本号");
                             long timestamp = new Date().getTime()/1000;
-                            String signInfo = deviceId + productId + timestamp;
-                            String sign = Codec2.getHmacMd5Str(signInfo, deviceSecret);
+                            //传入deviceId、productId、timestamp和deviceSecret作为key通过HmacMd5计算sign
+                            String sign = Codec2.getHmacMd5Str(deviceId + productId + timestamp, deviceSecret);
                             FormBody.Builder formBody = new FormBody.Builder();
                             Map<String, Object> params = new ArrayMap<>();
                             params.put("mid", mid);//"e0aee11a"
@@ -219,15 +214,13 @@ public class VersionManagerActivity extends Activity {
                             Gson mGson = new Gson();
                             String jsonParams = mGson.toJson(params);
                             Logger.d("发送请求参数："+jsonParams);
+
                             MediaType JSON = MediaType.parse("application/json; charset=utf-8");
                             RequestBody requestBody = RequestBody.create(JSON, jsonParams);
-
-
                             OkHttpClient client = new OkHttpClient();
                             Request request = new Request.Builder().url(checkVersionUrl)
                                     .post(requestBody)
                                     .build();
-
                             Response response = client.newCall(request).execute();
                             String responseBody = response.body().string();
                             Logger.d("接收返回数据："+responseBody);
@@ -235,14 +228,13 @@ public class VersionManagerActivity extends Activity {
                             //失败弹出提示信息
                             if(!"1000".equals(resultData.getStatus())){
                                 Logger.d(responseBody);
-                                //错误信息发送给主线程！
                                 Message msg = new Message();
                                 msg.what =  RESULT_LATES_VERSION_INFO_ERROR;
                                 msg.obj = resultData.getMsg();
                                 versionHandle.sendMessage(msg);
                                 return;
                             }
-                            //解析json 字符串获取版本号
+                            //解析json 字符串获取版本信息
                             Map<String,Object> data = resultData.getData();
                             Map<String,Object> version = (Map<String, Object>) data.get("version");
                             //结果信息发送给主线程
@@ -250,14 +242,19 @@ public class VersionManagerActivity extends Activity {
                             msg.what = RESULT_LATES_VERSION_INFO_SUCCESS;
                             msg.obj =  version.get("versionAlias");
                             versionHandle.sendMessage(msg);
-                            //获取新版本下载地址
-                            deltaUrl = ((String) version.get("deltaUrl")).replace("\"","");
-                            //获取下载文件的名称
-                            downloadFileName = deltaUrl.substring(deltaUrl.lastIndexOf('/')+1);
-                            //获取下载文件大小
+
+                            downloadFileInfo = new FileInfo();
+                            //保存要下载文件的MD5sum
+                            downloadFileInfo.setMd5sum((String) version.get("md5sum"));
+                            //保存新版本下载地址和下载文件名称
+                            downloadFileInfo.setFilenameAndUrl(((String) version.get("deltaUrl")).replace("\"",""));
+                            //异步获取新版本下载文件大小
                             dmu.getFileLength(downloadFileInfo);
-                            downloadFileLength = downloadFileInfo.getLength();
-                            Logger.d("version:"+deltaUrl+'\n'+"fileName:"+downloadFileName+'\n' + "downloadFileLength:"+downloadFileLength);
+                            while (downloadFileInfo.getLength() == 0){
+
+                            }
+
+                            Logger.d("要下载的文件信息:" + downloadFileInfo.toString());
                         } catch (IOException e) {
                             e.printStackTrace();
                         }
@@ -272,90 +269,121 @@ public class VersionManagerActivity extends Activity {
             @Override
             public void onClick(View view) {
                 //检查是否有权限
-                if(ActivityCompat.checkSelfPermission(VersionManagerActivity.this,Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED){
-                    ActivityCompat.requestPermissions(VersionManagerActivity.this, new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE},1);
+                if (ActivityCompat.checkSelfPermission(VersionManagerActivity.this, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+                    ActivityCompat.requestPermissions(VersionManagerActivity.this, new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, 1);
                     return;
                 }
+                if (downloadFileInfo == null){
+                    //检查更新
+                    check.performClick();
+                }
+                while(downloadFileInfo == null){
 
-                String datapath = DATABASE_PATH+"appDemo.db";
-                File dir = new File(DATABASE_PATH);
-                if(!dir.exists())
-                    dir.mkdirs();
-                //连接数据库
-                db = SQLiteDatabase.openOrCreateDatabase(datapath,null);
+                }
+                while (downloadFileInfo.getLength() == 0){
+
+                }
+                Logger.d("准备下载新版本！！！！！！");
+
+
+                //如果file_name表不存在，创建表
                 db.execSQL("create table if not exists file_info(_id INTEGER PRIMARY KEY AUTOINCREMENT," +
-                        "file_name VARCHAR NOT NULL," +
+                        "file_name VARCHAR NOT NULL UNIQUE," +
                         "url TEXT NOT NULL," +
                         "length TEXT DEFAULT 0 NOT NULL ," +
                         "finished TEXT DEFAULT 0 NOT NULL," +
                         "is_stop INTEGER DEFAULT 0 NOT NULL," +
-                        "is_downloading INTEGER DEFAULT 0 NOT NULL) ");
-               //获取查询结果集
-                final Cursor cursor = db.query("file_info", null,"file_name = ?", new String[]{downloadFileName}, null, null,null);
+                        "is_downloading INTEGER DEFAULT 1 NOT NULL," +
+                        "md5sum TEXT) ");
+              //获取查询结果集
+                final Cursor cursor = db.query("file_info", null,"file_name = ?", new String[]{downloadFileInfo.getFileName()}, null, null,null);
 
-                if(cursor.moveToNext()) {
-                    downloadFileInfo.setFileName(cursor.getString(1));
-                    downloadFileInfo.setUrl(cursor.getString(2));
-                    downloadFileInfo.setLength(cursor.getInt(3));
-                    downloadFileInfo.setFinished(cursor.getInt(4));
+                while (cursor.moveToNext()) {
+                    Logger.d("已经存在该文件信息！正在验证下载信息是否一致!!!!!!");
+                    FileInfo dbFileInfo = new FileInfo();
+                    dbFileInfo.setFileName(cursor.getString(1));
+                    dbFileInfo.setUrl(cursor.getString(2));
+                    dbFileInfo.setLength(cursor.getInt(3));
+                    dbFileInfo.setFinished(cursor.getInt(4));
                     if (cursor.getInt(5) == 1)
-                        downloadFileInfo.setStop(true);
+                        dbFileInfo.setStop(true);
                     else
-                        downloadFileInfo.setStop(false);
-
+                        dbFileInfo.setStop(false);
                     if (cursor.getInt(6) == 1)
-                        downloadFileInfo.setDownLoading(true);
+                        dbFileInfo.setDownLoading(true);
                     else
+                        dbFileInfo.setDownLoading(false);
+                    dbFileInfo.setMd5sum(cursor.getString(7));
+                    //如果数据库中的文件信息不是正在下载的状态中或者下载完成
+                    if(!dbFileInfo.isDownLoading()){
+                        //选择重新下载文件
                         downloadFileInfo.setDownLoading(false);
+                        Logger.d("文件不是正在下载中。。。。");
+                        break;
+                    }
+                    //再对比数据库和服务器传过来的文件信息对比,看看是否一致
+                    if(!dbFileInfo.equals(downloadFileInfo)){
+                        //则选择重新下载文件
+                        downloadFileInfo.setDownLoading(false);
+                        Logger.d("文件信息不一致！！！！！");
+                        break;
+                    }
+                    //文件信息一致，再检查文件是否存在
+                    File file = new File(DATABASE_PATH, downloadFileInfo.getFileName());
+                    if(!file.exists()){
+                        //文件不存在，选择重新下载文件
+                        Logger.d(downloadFileInfo.getFileName()+"文件不存在！！！！！");
+                        downloadFileInfo.setDownLoading(false);
+                        break;
+                    }
+                    //对比下载到一半的文件大小和数据库进度是否一致
+                    if(!(file.length() == dbFileInfo.getFinished())){
+                        //文件不存在，选择重新下载文件
+                        downloadFileInfo.setDownLoading(false);
+                        Logger.d("文件大小不匹配！文件下载进度/文件大小:" + dbFileInfo.getFinished() + "/" + file.length());
+                        break;
+                    }
+                    downloadFileInfo.setDownLoading(true);
+                    downloadFileInfo.setFinished(dbFileInfo.getFinished());
+                    downloadFileInfo.setDownLoading(dbFileInfo.isDownLoading());
+                    Logger.d("下载信息一致,文件总大小:" + downloadFileInfo.getLength()+'\n');
                     //设置进度条最大值
-                    pb.setMax(downloadFileInfo.getLength());
-                    pb.setProgress(downloadFileInfo.getFinished());
+                    downloadProgress.setMax(downloadFileInfo.getLength());
+                    downloadProgress.setProgress(downloadFileInfo.getFinished());
 
-                }else{
+                }
+                //如果文件是不正在下载中或者下载完成，则往数据库重新插入下载信息
+                if(!downloadFileInfo.isDownLoading()){
+                    //清理数据库和文件
+                    db.delete("file_info","file_name=?", new String[]{downloadFileInfo.getFileName()});
+                    File file = new File(DATABASE_PATH, downloadFileInfo.getFileName());
+                    if(file.exists()){
+                        file.delete();
+                    };
+
+                    Logger.d("正在插入新下载信息！！！！");
                     ContentValues cv = new ContentValues();
-                    cv.put("file_name",downloadFileName);
-                    cv.put("url",deltaUrl);
-                    cv.put("length",downloadFileLength);
+                    cv.put("file_name",downloadFileInfo.getFileName());
+                    cv.put("url",downloadFileInfo.getUrl());
+                    cv.put("length",downloadFileInfo.getLength());
+                    cv.put("md5sum",downloadFileInfo.getMd5sum());
                     db.insert("file_info",null,cv);
-                    downloadFileInfo.setFileName(downloadFileName);
-                    downloadFileInfo.setUrl(deltaUrl);
-                    pb.setMax(downloadFileInfo.getLength());
+                    downloadFileInfo.setFinished(0);
+
+                    Logger.d("下载信息插入成功，文件总大小：" + downloadFileInfo.getLength());
+                    downloadProgress.setMax(downloadFileInfo.getLength());
 
                 }
                 cursor.close();
                 Logger.d("要下的文件信息:" + downloadFileInfo.toString()+";开始下载文件");
 
-                //创建循环监听下载进度
-                new Thread(new Runnable() {
-                    @Override
-                    public void run() {
-                        while(true){
-                            try {
-                                Thread.sleep(1000);
-                                if(downloadFileInfo.getFinished() >= downloadFileInfo.getLength())
-                                    break;
-                                if(downloadFileInfo.isStop())
-                                    break;
-                                Message msg = new Message();
-                                msg.what = DOWNLOADING_PROGRESS;
-                                versionHandle.sendMessage(msg);
-                            } catch (InterruptedException e) {
-                                e.printStackTrace();
-                            }
-                        }
-                        ContentValues cv = new ContentValues();
-                        cv.put("finished",downloadFileInfo.getFinished());
-                        db.update("file_info",cv,"file_name=?", new String[]{downloadFileName});
-                        Cursor cursor1 =  db.query("file_info",null,"file_name=?", new String[]{downloadFileName},null,null,null);
-                        if(cursor1.moveToNext())
-                              Logger.d("保存的下载大小为：" + cursor.getInt(4) + "!!!!!!!");
-                    }
-                }).start();
+                //创建下载进度监听
+                new DownloadProcess().start();
                 //调用下载程序
-                dmu.downloadPontFile(getApplicationContext(),downloadFileInfo);
+                dmu.downloadPontFile(downloadFileInfo);
                 down.setVisibility(View.GONE);//将下载按钮隐藏
                 stop.setVisibility(View.VISIBLE);//显示暂停按钮
-                pb.setVisibility(View.VISIBLE);
+                downloadProgress.setVisibility(View.VISIBLE);
             }
         });
         stop.setOnClickListener(new View.OnClickListener() {
@@ -369,13 +397,19 @@ public class VersionManagerActivity extends Activity {
         up.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                ContentValues cv = new ContentValues();
-                cv.put("finished",0);
-                db.update("file_info",cv,"file_name=?", new String[]{downloadFileName});
-                String mSDCardPath = Environment.getExternalStorageDirectory().getPath();
-                File dest = new File(mSDCardPath, downloadFileName);
-                if(dest.exists())
-                    dest.delete();
+                db.execSQL("drop table IF exists  file_info");
+
+
+                File file = new File(DATABASE_PATH, downloadFileInfo.getFileName());
+                String md5sum = Codec2.getMd5ByFile(file);
+                Logger.d("计算出文件的MD5值为:" + md5sum + "服务器计算出的MD5值为:" + downloadFileInfo.getMd5sum());
+                if(md5sum.equals(downloadFileInfo.getMd5sum()))
+                    Logger.d("MD5匹配！！！！");
+                else
+                    Logger.i("MD5不匹配！！！！！");
+                if(file.exists())
+                    file.delete();
+                downloadFileInfo = null;
             }
         });
 
@@ -391,7 +425,11 @@ public class VersionManagerActivity extends Activity {
                 return;
             }
             if(msg.what == DOWNLOADING_PROGRESS){
-                pb.setProgress(downloadFileInfo.getFinished());
+                downloadProgress.setProgress(downloadFileInfo.getFinished());
+                return;
+            }
+            if(msg.what == DOWNLOADING_ERROE){
+                hintError((String) msg.obj);
                 return;
             }
             latestVersion = (String) msg.obj;
@@ -399,7 +437,59 @@ public class VersionManagerActivity extends Activity {
         }
     }
 
+    /**
+     * 监听下载进度线程
+     */
+    private class DownloadProcess extends Thread{
+        @Override
+        public void run() {
+            super.run();
+            //创建下载进度监听
+            while(true){
+                try {
+                    Thread.sleep(1000);
+                    if(downloadFileInfo.getFinished() >= downloadFileInfo.getLength())
+                        break;
+                    if(downloadFileInfo.isStop())
+                        break;
+                    Message msg = new Message();
+                    msg.what = DOWNLOADING_PROGRESS;
+                    versionHandle.sendMessage(msg);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+            ContentValues cv = new ContentValues();
+            cv.put("finished",downloadFileInfo.getFinished());
+            //下载完成，进行md5校验
+            if(downloadFileInfo.getFinished() == downloadFileInfo.getLength()) {
+                //数据库中文件信息保存为不是下载中
+                cv.put("is_downloading",0);
+                File file = new File(DATABASE_PATH, downloadFileInfo.getFileName());
+                String md5sum = Codec2.getMd5ByFile(file);
+                Logger.d("计算出文件的MD5值为:" + md5sum + "服务器计算出的MD5值为:" + downloadFileInfo.getMd5sum());
+                if (!md5sum.equals(downloadFileInfo.getMd5sum()) || !file.exists()) {
+                    Logger.i("MD5不匹配！！！！！");
+                    Message msg = new Message();
+                    msg.what = DOWNLOADING_ERROE;
+                    msg.obj = "文件下载错误";
+                    file.delete();
+                    versionHandle.sendMessage(msg);
+                    return;
+                }else {
+                    Logger.i("MD5匹配！！！！！");
+                }
+            }
 
+
+
+            int success = db.update("file_info",cv,"file_name=?", new String[]{downloadFileInfo.getFileName()});
+            if(success >0)
+                Logger.d("保存数据库成功！！！！！！！！！");
+
+
+        }
+    }
     /**
      *禁止返回键
      */

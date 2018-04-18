@@ -6,7 +6,8 @@ public class FileInfo {
     private int length = 0;//文件大小
     private int finished = 0;//下载以已完成进度
     private boolean isStop = false;//是否暂停下载
-    private boolean isDownLoading = false;//是否正在下载
+    private boolean isDownLoading = false;//是否下载到一半 false代表下载完成 或者 代表要下的信息和数据库不一致需要重新下载
+    private String md5sum;//文件的md5值
 
     public String getFileName() {
         return fileName;
@@ -36,10 +37,13 @@ public class FileInfo {
         return finished;
     }
 
-    public void setFinished(int len) {
-        this.finished += len;
+    public void setFinished(int finished) {
+        this.finished = finished;
     }
 
+    public void addFinished(int length){
+        finished += length;
+    }
     public boolean isStop() {
         return isStop;
     }
@@ -56,12 +60,32 @@ public class FileInfo {
         isDownLoading = downLoading;
     }
 
+    public String getMd5sum() {
+        return md5sum;
+    }
+
+    public void setMd5sum(String md5sum) {
+        this.md5sum = md5sum;
+    }
+    public void setFilenameAndUrl(String url){
+        this.url = url;
+        this.fileName = url.substring(url.lastIndexOf('/')+1);
+    }
     public String toString(){
-        return "fileName;" + fileName
-               + "  ; url:" + url
-               + "  ; length:" + length
-               + "  ; finished:" + finished
-               + "  ; isStop:" + isStop
-               + "  ; isDownLoading:" +isDownLoading;
+        return "fileName:" + fileName
+               + "; url:" + url
+               + "; length:" + length
+               + "; finished:" + finished
+               + "; isStop:" + isStop
+               + "; isDownLoading:" +isDownLoading
+                +"; md5:" + md5sum;
+    }
+
+
+    public boolean equals(FileInfo fileInfo) {
+        return this.url.equals(fileInfo.getUrl()) &&
+                this.md5sum.equals(fileInfo.getMd5sum()) &&
+                this.length == fileInfo.getLength() &&
+                this.fileName.equals(fileInfo.getFileName());
     }
 }

@@ -12,6 +12,8 @@ import com.orhanobut.logger.Logger;
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
+import java.nio.MappedByteBuffer;
+import java.nio.channels.FileChannel;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -20,6 +22,7 @@ import okhttp3.Callback;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
+import okhttp3.ResponseBody;
 import okio.BufferedSink;
 import okio.BufferedSource;
 import okio.Okio;
@@ -74,7 +77,7 @@ public class DownloadManagerUtil {
     /**
      * OkHttp设置请求头断点下载
      */
-    public void downloadPontFile( Context context, FileInfo fileInfo){
+    public void downloadPontFile( FileInfo fileInfo){
         final String url = fileInfo.getUrl();
         final FileInfo _fileInfo = fileInfo;
         Logger.d("开始下载文件："+fileInfo.getFileName() + url);
@@ -92,37 +95,41 @@ public class DownloadManagerUtil {
             @Override
             public void onResponse(Call call, Response response) throws IOException {
                 try {
-                    Logger.d("回调成功！！！！！！！！！！！！");
-                    Sink sink = null;
-                    BufferedSink bufferedSink = null;
+                    //Sink sink = null;
+                    ResponseBody body = response.body();
                     Source source = null;
                     BufferedSource bufferedSource = null;
                     String mSDCardPath = Environment.getExternalStorageDirectory().getPath();
                     File dest = new File(mSDCardPath, url.substring(url.lastIndexOf("/") + 1));
-                    //删除文件
+
                     if(dest.exists()){
-                        Logger.d("源文件大小:" + dest.length() + "/" + _fileInfo.getLength());
+                        Logger.d("源文件大小:" + dest.length() + "/" + _fileInfo.getLength() + "/" + _fileInfo.getFinished());
                     }
                     RandomAccessFile raf = new RandomAccessFile(dest, "rwd");
                     raf.seek(_fileInfo.getFinished());//从文件已经下载完成处开始读取
-
-                    sink = Okio.sink(dest);
-                    bufferedSink = Okio.buffer(sink);
-                    source = response.body().source();
+                    /*
+                    hanel NIO中的用法，由于RandomAccessFile没有使用缓存策略，直接使用会使得下载速度变慢，亲测缓存下载3.3秒的文件，用普通的RandomAccessFile需要20多秒。
+                    FileChannel channelOut = raf.getChannel();
+                     内存映射，直接使用RandomAccessFile，是用其seek方法指定下载的起始位置，使用缓存下载，在这里指定下载位置。
+                    MappedByteBuffer mappedBuffer = channelOut.map(FileChannel.MapMode.READ_WRITE, _fileInfo.getFinished(), body.contentLength());
+                   **/
+                    // sink = Okio.sink(raf.);
+                   // bufferedSink = Okio.buffer;
+                    source = body.source();
                     bufferedSource = Okio.buffer(source);
                     byte[] b = new byte[1024 * 8];
                     int len = 0;
-                    Logger.d("文件已经载入：" + _fileInfo.getFinished() + "字节！开始继续下载！！！");
                     while ((len = bufferedSource.read(b)) != -1) {
                         if(_fileInfo.isStop())
                             break;
-                        bufferedSink.write(b, 0, len);
-                        _fileInfo.setFinished(len);
+                        //mappedBuffer.put(b,0,len);
+                        raf.write(b,0,len);
+                        //bufferedSink.write(b, 0, len);
+                        _fileInfo.addFinished(len);
                     }
+                    _fileInfo.setStop(true);
                     Logger.d("源文件大小/下载字节数：" + dest.length() + "/" + _fileInfo.getFinished());
                     Logger.d("写入结束！！！！！");
-
-                    sink.close();
                     source.close();
                 } catch (IOException e) {
                     e.printStackTrace();
@@ -143,11 +150,12 @@ public class DownloadManagerUtil {
     /**
      * 另外开辟一条连接获取文件长度
      */
-    public int getFileLength(final FileInfo fileInfo){
+    public void getFileLength(final FileInfo fileInfo){
         Request request = new Request.Builder().url(fileInfo.getUrl()).build();
         OkHttpClient client = new OkHttpClient();
 
-        client.newCall(request).enqueue(new Callback() {
+        client.newCall(request)
+                .enqueue(new Callback() {
             @Override
             public void onFailure(Call call, IOException e) {
 
@@ -160,9 +168,6 @@ public class DownloadManagerUtil {
             }
         });
 
-
-
-        return  fileLength;
     }
 
 

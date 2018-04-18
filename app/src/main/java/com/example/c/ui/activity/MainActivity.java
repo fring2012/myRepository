@@ -1,7 +1,6 @@
-package com.example.c.appdemo;
+package com.example.c.ui.activity;
 
 import android.annotation.SuppressLint;
-import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Service;
 import android.content.ComponentName;
@@ -15,7 +14,6 @@ import android.os.Message;
 import android.os.Messenger;
 import android.os.PersistableBundle;
 import android.os.RemoteException;
-import android.provider.Settings;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.view.View;
@@ -23,6 +21,7 @@ import android.widget.Button;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
+import com.example.c.appdemo.R;
 import com.example.c.service.LoginService;
 import com.example.c.utils.PropertiesUtils;
 import com.orhanobut.logger.Logger;
