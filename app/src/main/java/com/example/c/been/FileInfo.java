@@ -1,12 +1,33 @@
 package com.example.c.been;
 
-public class FileInfo {
+
+import com.example.c.been.code.Column;
+import com.example.c.been.code.Table;
+
+@Table(table = "file_info")
+public class FileInfo  {
+    @Column(cname = "_id")
+    private int id;
+
+    @Column(cname = "file_name")
     private String fileName;//文件名
+
+    @Column(cname = "url")
     private String url;//下载地址
+
+    @Column(cname = "length")
     private int length = 0;//文件大小
+
+    @Column(cname = "finished")
     private int finished = 0;//下载以已完成进度
+
+    @Column(cname = "is_stop")
     private boolean isStop = false;//是否暂停下载
+
+    @Column(cname = "is_downloading")
     private boolean isDownLoading = false;//是否下载到一半 false代表下载完成 或者 代表要下的信息和数据库不一致需要重新下载
+
+    @Column(cname = "md5sum")
     private String md5sum;//文件的md5值
 
     public String getFileName() {

@@ -4,37 +4,24 @@ import android.content.ContentValues;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 
+import java.io.File;
+
 public class SqliteUtil {
     private static SqliteUtil sqliteUtil;
-    private SQLiteDatabase db;
+    private static SQLiteDatabase db;
 
 
 
-    private SqliteUtil(){
-        db = SQLiteDatabase.openOrCreateDatabase("appDemo.db",null);
+
+    private SqliteUtil(String path){
+        File dir = new File(path);
+        if(!dir.exists())
+            dir.mkdirs();
+        db = SQLiteDatabase.openOrCreateDatabase(path+"appDemo.db",null);
     }
-    public static SqliteUtil getSqliteUtil(){
+    public static SQLiteDatabase geSQLiteDatabase(String path){
         if (sqliteUtil == null)
-            sqliteUtil = new SqliteUtil();
-        return sqliteUtil;
-    }
-    public void execSQL(String sql){
-        db.execSQL(sql);
-    }
-    public void insert(String tableName,ContentValues cValues){
-        db.insert(tableName,null,cValues);
-    }
-    public void delete(String tableName,String whereClause,String[] whereArgs){
-        db.delete(tableName,whereClause,whereArgs);
-    }
-    public void update(String tableName,ContentValues values,String whereClause,String[] whereArgs){
-        db.update(tableName,values,whereClause,whereArgs);
-    }
-    public Cursor query(String table,String[] columns,String selection,String[]  selectionArgs,String groupBy,String having,String orderBy,String limit){
-        return  db.query(table, columns, selection, selectionArgs, groupBy, having, orderBy, limit);
-    }
-    public void dropTable(String table){
-        String sql = "DROP TABLE "+table;
-        execSQL(sql);
+            sqliteUtil = new SqliteUtil(path);
+        return db;
     }
 }

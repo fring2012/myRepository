@@ -4,18 +4,27 @@
     android:layout_height="match_parent"
     android:orientation="vertical"
     android:gravity="center">
-    <ProgressBar
-        style="?android:attr/progressBarStyleHorizontal"
-        android:id="@+id/downloadProgress"
+    <LinearLayout
+        android:id="@+id/downloadList"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:visibility="invisible"/>
-    <ProgressBar
-        style="?android:progress"
-        android:id="@+id/progress"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:visibility="invisible"/>
+        android:visibility="invisible"
+        android:orientation="vertical"
+        android:layout_margin="10dp"
+        >
+        <ProgressBar
+            style="?android:attr/progressBarStyleHorizontal"
+            android:id="@+id/downloadProgress"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            />
+        <TextView
+            android:id="@+id/downloadInfo"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" />
+
+    </LinearLayout>
+
     <TextView
         style="@style/infoStyle"
         android:id="@+id/versionInfo"

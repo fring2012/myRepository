@@ -6,6 +6,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
+import java.util.List;
 import java.util.Properties;
 
 /**
@@ -27,5 +28,17 @@ public class PropertiesUtils {
         }
         return properties;
     }
-
+    public static String propertiesUrl(String msg){
+        if (properties == null)
+            throw new RuntimeException( "请先调用getPropertes(Context context)方法初始化properties");
+        List<String> list = StringUtil.extractMessageByRegular(msg);
+        String str;
+        for (String s: list) {
+            String param = properties.getProperty(s);
+            if(param == null)
+                throw new RuntimeException(s + "参数不存在");
+            msg = msg.replace("{" + s + "}",param);
+        }
+        return msg;
+    }
 }

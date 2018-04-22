@@ -1,8 +1,10 @@
 package com.example.c.been;
 
+
+
 import java.util.Map;
 
-public class ResultData {
+public class ResultData  {
     private String status;
     private String msg;
     private Map<String,Object> data;

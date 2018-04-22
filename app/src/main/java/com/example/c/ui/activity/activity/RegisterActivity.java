@@ -1,4 +1,4 @@
-package com.example.c.ui.activity;
+package com.example.c.ui.activity.activity;
 
 import android.app.Activity;
 import android.app.AlertDialog;

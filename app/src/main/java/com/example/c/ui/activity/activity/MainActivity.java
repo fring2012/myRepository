@@ -1,7 +1,8 @@
-package com.example.c.ui.activity;
+package com.example.c.ui.activity.activity;
 
 import android.annotation.SuppressLint;
 import android.app.AlertDialog;
+import android.app.ProgressDialog;
 import android.app.Service;
 import android.content.ComponentName;
 import android.content.Context;
@@ -14,7 +15,6 @@ import android.os.Message;
 import android.os.Messenger;
 import android.os.PersistableBundle;
 import android.os.RemoteException;
-import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
@@ -23,12 +23,13 @@ import android.widget.TextView;
 
 import com.example.c.appdemo.R;
 import com.example.c.service.LoginService;
+import com.example.c.ui.activity.common.BaseView;
 import com.example.c.utils.PropertiesUtils;
 import com.orhanobut.logger.Logger;
 
 import java.util.Properties;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends BaseView {
     private Button login;
     private Button reg;
     private TextView account;
@@ -55,6 +56,7 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        progressDialog = new ProgressDialog(this);
         Properties properties = PropertiesUtils.getPropertes(getApplicationContext());
         login = (Button) findViewById(R.id.login);
         reg = findViewById(R.id.reg);
@@ -110,6 +112,16 @@ public class MainActivity extends AppCompatActivity {
     @Override
     public void onSaveInstanceState(Bundle outState, PersistableBundle outPersistentState) {
         super.onSaveInstanceState(outState, outPersistentState);
+    }
+
+
+    public String getAccount() {
+        return (String) account.getText();
+    }
+
+
+    public String getPassword() {
+        return (String) password.getText();
     }
 
 
