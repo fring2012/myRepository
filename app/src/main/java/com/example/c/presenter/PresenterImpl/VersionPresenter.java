@@ -66,7 +66,7 @@ public class VersionPresenter extends BasePresenter<VersionManagerActivity> impl
     public  final int DOWNLOADING_ERROE = 3;
 
     public VersionPresenter(){
-        init();
+
     }
 
     @Override

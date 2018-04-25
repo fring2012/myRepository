@@ -2,6 +2,7 @@ package com.example.c.ui.activity.activity;
 
 import android.Manifest;
 import android.app.AlertDialog;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 
 import android.os.Bundle;
@@ -66,21 +67,22 @@ public class VersionManagerActivity extends BaseView {
         up = (Button) findViewById(R.id.up);
         versionInfo = (TextView) findViewById(R.id.versionInfo);
 
-
-        //telephonyManager = (TelephonyManager) getSystemService(Context.TELEPHONY_SERVICE);
         versionPresenter = new VersionPresenter();
         versionPresenter.setActivity(this);
-        //设备注册
-        versionPresenter.deviceRegister();
+
+
+
+
+
+
 
 
         check.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 //检查是否有网络权限
-                if(ActivityCompat.checkSelfPermission(VersionManagerActivity.this,Manifest.permission.INTERNET) != PackageManager.PERMISSION_GRANTED){
-                    //申请网络权限
-                    ActivityCompat.requestPermissions(VersionManagerActivity.this, new String[]{Manifest.permission.INTERNET}, 1);
+                if (ActivityCompat.checkSelfPermission(VersionManagerActivity.this, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+                    ActivityCompat.requestPermissions(VersionManagerActivity.this, new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, 2);
                     return;
                 }
                 showProgressDialog("正在检测最新版本！");
@@ -94,7 +96,7 @@ public class VersionManagerActivity extends BaseView {
             public void onClick(View view) {
                 //检查是否有权限
                 if (ActivityCompat.checkSelfPermission(VersionManagerActivity.this, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
-                    ActivityCompat.requestPermissions(VersionManagerActivity.this, new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, 1);
+                    ActivityCompat.requestPermissions(VersionManagerActivity.this, new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, 2);
                     return;
                 }
                 //下载文件
@@ -117,11 +119,33 @@ public class VersionManagerActivity extends BaseView {
         up.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                versionPresenter.upVersion();
+//                versionPresenter.upVersion();
             }
         });
 
 
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        if(ActivityCompat.checkSelfPermission(this,Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_DENIED){
+//            if(ActivityCompat.shouldShowRequestPermissionRationale(this,Manifest.permission.WRITE_EXTERNAL_STORAGE)) {
+//                hintError("未设置读写权限！");
+//                return;
+//            }
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE},1);
+        }else{
+            versionPresenter.init();
+            //检查是否有网络权限
+            if (ActivityCompat.checkSelfPermission(VersionManagerActivity.this, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+                ActivityCompat.requestPermissions(VersionManagerActivity.this, new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, 2);
+                return;
+            }else {
+                //设备注册
+                versionPresenter.deviceRegister();
+            }
+        }
     }
 
     /**
@@ -178,13 +202,7 @@ public class VersionManagerActivity extends BaseView {
     protected void onResume() {
         super.onResume();
         Logger.d("执行到--------->onResume");
-        if(ActivityCompat.checkSelfPermission(this,Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_DENIED){
-            if(ActivityCompat.shouldShowRequestPermissionRationale(this,Manifest.permission.WRITE_EXTERNAL_STORAGE)) {
-                hintError("未设置权限！");
-                return;
-            }
-            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE},1);
-        }
+
 //        Logger.d("执行到--------->onResume");
 //        if (PermissionUtil.isLacksOfPermission(this,PermissionUtil.PERMISSION[0])) {
 //            Logger.d("动态申请权限------------->");
@@ -199,12 +217,34 @@ public class VersionManagerActivity extends BaseView {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         Logger.d("执行到onRequestPermissionsResult，"+"requestCode值："+requestCode);
         if (requestCode == 1) {
-            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) { //同意权限申请
-                down.performClick();
-            }else { //拒绝权限申请
+            if (grantResults.length <= 0 || grantResults[0] != PackageManager.PERMISSION_GRANTED) { //拒绝权限申请
                 Logger.d("权限被拒绝！！");
+                Intent intent = new Intent(VersionManagerActivity.this,MainActivity.class);
+                startActivity(intent);
                 Toast.makeText(this,"权限被拒绝了", Toast.LENGTH_SHORT).show();
+                return;
             }
+            versionPresenter.init();
+            //检查是否有网络权限
+            if (ActivityCompat.checkSelfPermission(VersionManagerActivity.this, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+                ActivityCompat.requestPermissions(VersionManagerActivity.this, new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, 2);
+                return;
+            }else {
+                //设备注册
+                versionPresenter.deviceRegister();
+            }
+        }
+        if (requestCode == 2){
+            if (grantResults.length <= 0 || grantResults[0] != PackageManager.PERMISSION_GRANTED) { //不同意权限申请
+                Logger.d("权限被拒绝！！");
+                Intent intent = new Intent(VersionManagerActivity.this,MainActivity.class);
+                startActivity(intent);
+                Toast.makeText(this,"网络权限被拒绝了", Toast.LENGTH_SHORT).show();
+                return;
+            }
+            //设备注册
+            versionPresenter.deviceRegister();
+
         }
     }
     public void hintError(String msg){
@@ -214,6 +254,7 @@ public class VersionManagerActivity extends BaseView {
                 .setPositiveButton("确定",null)
                 .show();
     }
+
     /**
      * 默认信任所有的证书
      * TODO 最好加上证书认证，主流App都有自己的证书
