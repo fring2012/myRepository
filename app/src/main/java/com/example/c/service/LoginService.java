@@ -19,6 +19,8 @@ import android.support.v4.content.LocalBroadcastManager;
 import android.util.ArrayMap;
 import android.util.Log;
 
+import com.example.c.presenter.PresenterImpl.MainPresenter;
+import com.example.c.presenter.PresenterImpl.RegisterPresenter;
 import com.example.c.ui.activity.activity.MainActivity;
 import com.example.c.ui.activity.activity.RegisterActivity;
 import com.orhanobut.logger.Logger;
@@ -54,6 +56,20 @@ public class LoginService extends Service{
         localBroadcastManager.registerReceiver(broadcastReceiver,intentFilter);
     }
 
+    @Override
+    public int onStartCommand(Intent intent, int flags, int startId) {
+        Logger.d("接收到请求，正在处理。。。。。");
+        String account = intent.getCharSequenceExtra("account").toString();
+        String invoke = intent.getStringExtra("invoke");
+        String password = intent.getCharSequenceExtra("password").toString();
+        Logger.d("账号:" + account + "密码:" + password);
+        if ("login".equals(invoke)){
+            loginService(account,password);
+        }else if("register".equals(invoke)){
+            registerService(account,password);
+        }
+        return super.onStartCommand(intent, flags, startId);
+    }
 
     /**
      * 登录服务
@@ -70,7 +86,7 @@ public class LoginService extends Service{
         }
         Intent intent = new Intent();
         intent.putExtra("resultState",resultState);
-        intent.setAction(MainActivity.BROADCAST_RECEIVER_ACTION_NAME);
+        intent.setAction(MainPresenter.BROADCAST_RECEIVER_ACTION_NAME);
         localBroadcastManager.sendBroadcast(intent);
     }
 
@@ -87,7 +103,7 @@ public class LoginService extends Service{
         }
         Intent intent = new Intent();
         intent.putExtra("resultState",resultState);
-        intent.setAction(RegisterActivity.REGISTER_BROADCAST_RECEIVER_ACTION_NAME);
+        intent.setAction(RegisterPresenter.REGISTER_BROADCAST_RECEIVER_ACTION_NAME);
         localBroadcastManager.sendBroadcast(intent);
 
     }

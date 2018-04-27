@@ -8,10 +8,7 @@ import com.example.c.dao.code.Dao;
 import java.util.List;
 
 public interface IFileInfoDao extends Dao{
-    /**
-     * 创建表
-     */
-    void createFileInfoTable();
+
 
     /**
      * 用文件名获取文件信息
@@ -20,19 +17,7 @@ public interface IFileInfoDao extends Dao{
      */
     FileInfo getFileInfo(String fileName);
 
-    /**
-     * 获取文件信息列表
-     * @param fileName
-     * @return
-     */
-    List<FileInfo> getFileInfoList(String fileName);
 
-    /**
-     * 获取结果集
-     * @param fileName
-     * @return
-     */
-    Cursor getCursor(String fileName);
 
     /**
      * 更新数据库的下载进度
@@ -47,5 +32,12 @@ public interface IFileInfoDao extends Dao{
      * @return
      */
     long insertFileInfo(FileInfo fileInfo);
+
+    /**
+     * 删除数据库信息
+     * @param fileInfo
+     * @return
+     */
+    int deleteFileInfo(FileInfo fileInfo);
 
 }

@@ -91,7 +91,6 @@ public class VersionPresenter extends BasePresenter<VersionManagerActivity> impl
             params.put("version", version);
             params.put("networkType",networkType);
             params.put("productId",productId);
-            OkHttpManager.getInstance().getStringDoPostJsonSync(registerDeviceUrl,params);
             Gson mGson = new Gson();
 
             String responseBody =  OkHttpManager.getInstance().getStringDoPostJsonSync(registerDeviceUrl,params);
@@ -129,48 +128,35 @@ public class VersionPresenter extends BasePresenter<VersionManagerActivity> impl
             params.put("sign", sign);//"96b226a54d5ce3d2adcd037fe50cc143"
             params.put("networkType",networkType);
             Gson mGson = new Gson();
-            String jsonParams = mGson.toJson(params);
-            Logger.d("发送请求参数："+jsonParams);
-
-            MediaType JSON = MediaType.parse("application/json; charset=utf-8");
-            RequestBody requestBody = RequestBody.create(JSON, jsonParams);
-            OkHttpClient client = new OkHttpClient();
-            Request request = new Request.Builder().url(checkVersionUrl)
-                    .post(requestBody)
-                    .build();
-        Response response = null;
-        try {
-             response = client.newCall(request).execute();
-             String responseBody = response.body().string();
-                Logger.d("接收返回数据："+responseBody);
-                ResultData resultData = mGson.fromJson(responseBody,ResultData.class);
-                //失败弹出提示信息
-                if(!"1000".equals(resultData.getStatus())){
-                    sendMessage(RESULT_LATES_VERSION_INFO_ERROR,resultData.getMsg());
-                    return;
-                }
-                //解析json 字符串获取版本信息
-                Map<String,Object> data = resultData.getData();
-                Map<String,Object> version = (Map<String, Object>) data.get("version");
-                //结果信息发送给主线程
-                sendMessage(RESULT_LATES_VERSION_INFO_SUCCESS, (String) version.get("versionAlias"));
+            //访问checkVersionUrl检查最新版本
+            String responseBody = OkHttpManager.getInstance().getStringDoPostJsonSync(checkVersionUrl,params);
+            Logger.d("接收返回数据："+responseBody);
+            ResultData resultData = mGson.fromJson(responseBody,ResultData.class);
+            //失败弹出提示信息
+            if(!"1000".equals(resultData.getStatus())){
+                sendMessage(RESULT_LATES_VERSION_INFO_ERROR,resultData.getMsg());
+                return;
+            }
+            //解析json 字符串获取版本信息
+            Map<String,Object> data = resultData.getData();
+            Map<String,Object> version = (Map<String, Object>) data.get("version");
+            //结果信息发送给主线程
+            sendMessage(RESULT_LATES_VERSION_INFO_SUCCESS, (String) version.get("versionAlias"));
 
 
 
-                downloadFileInfo = new FileInfo();
+            downloadFileInfo = new FileInfo();
 
-                //保存要下载文件的MD5sum
-                downloadFileInfo.setMd5sum((String) version.get("md5sum"));
-                //保存新版本下载地址和下载文件名称
-                downloadFileInfo.setFilenameAndUrl(((String) version.get("deltaUrl")).replace("\"",""));
-                //异步获取新版本下载文件大小
-                DownloadManagerUtil.getFileLength(downloadFileInfo);
-                Logger.d("要下载的文件信息:" + downloadFileInfo.toString());
-                //关闭progressDialog
-                sendMessage(SHUNT_PROGRESS_DIALOG, null);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+            //保存要下载文件的MD5sum
+            downloadFileInfo.setMd5sum((String) version.get("md5sum"));
+            //保存新版本下载地址和下载文件名称
+            downloadFileInfo.setFilenameAndUrl(((String) version.get("deltaUrl")).replace("\"",""));
+            //异步获取新版本下载文件大小
+            DownloadManagerUtil.getFileLength(downloadFileInfo);
+            Logger.d("要下载的文件信息:" + downloadFileInfo.toString());
+            //关闭progressDialog
+            sendMessage(SHUNT_PROGRESS_DIALOG, null);
+
     }
 
     @Override

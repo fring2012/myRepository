@@ -16,7 +16,7 @@ public class FileDaoImpl extends BaseDao implements IFileInfoDao {
     public FileDaoImpl(){
         createFileInfoTable();
     }
-    public void createFileInfoTable(){
+    private void createFileInfoTable(){
         //如果file_name表不存在，创建表
         database.execSQL("create table if not exists file_info(_id INTEGER PRIMARY KEY AUTOINCREMENT," +
                 "file_name VARCHAR NOT NULL UNIQUE," +
@@ -37,19 +37,8 @@ public class FileDaoImpl extends BaseDao implements IFileInfoDao {
         return dbFileInfo;
     }
 
-    @Override
-    public List<FileInfo> getFileInfoList(String fileName) {
-        List<FileInfo> fileInfos = new ArrayList<>();
-        Cursor cursor = getCursor(fileName);
-        while(cursor.moveToNext()){
-            fileInfos.add(getFileInfo(cursor));
-        }
-        cursor.close();
-        return fileInfos;
-    }
 
-    @Override
-    public Cursor getCursor(String fileName){
+    private Cursor getCursor(String fileName){
         Cursor cursor = database.query("file_info", null,"file_name = ?", new String[]{fileName}, null, null,null);
         return cursor;
     }
@@ -66,7 +55,7 @@ public class FileDaoImpl extends BaseDao implements IFileInfoDao {
     @Override
     public long insertFileInfo(FileInfo fileInfo) {
         //清理数据库和文件
-        database.delete("file_info","file_name=?", new String[]{fileInfo.getFileName()});
+        deleteFileInfo(fileInfo);
         ContentValues cv = new ContentValues();
         cv.put("file_name",fileInfo.getFileName());
         cv.put("url",fileInfo.getUrl());
@@ -76,8 +65,13 @@ public class FileDaoImpl extends BaseDao implements IFileInfoDao {
         return database.insert("file_info",null,cv);
     }
 
+    @Override
+    public int deleteFileInfo(FileInfo fileInfo) {
+        return   database.delete("file_info","file_name=?", new String[]{fileInfo.getFileName()});
+    }
 
-    public FileInfo getFileInfo(Cursor cursor){
+
+    private FileInfo getFileInfo(Cursor cursor){
         FileInfo dbFileInfo = new FileInfo();
         dbFileInfo.setFileName(cursor.getString(1));
         dbFileInfo.setUrl(cursor.getString(2));
