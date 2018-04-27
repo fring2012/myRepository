@@ -4,9 +4,11 @@ import android.annotation.SuppressLint;
 import android.app.AlertDialog;
 import android.app.ProgressDialog;
 import android.app.Service;
+import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.ServiceConnection;
 import android.content.SharedPreferences;
 import android.os.Handler;
@@ -16,6 +18,8 @@ import android.os.Messenger;
 import android.os.PersistableBundle;
 import android.os.RemoteException;
 import android.os.Bundle;
+import android.support.v4.content.LocalBroadcastManager;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ProgressBar;
@@ -36,27 +40,17 @@ public class MainActivity extends BaseView {
     private TextView password;
     private SharedPreferences sp;
     private SharedPreferences.Editor editor;
-    private Messenger serviceMessenger;
-    private ProgressBar pb;
-    private ServiceConnection conn = new ServiceConnection() {
-        @Override
-        public void onServiceConnected(ComponentName componentName, IBinder iBinder) {
-            //绑定服务，建立服务端的Service
-            serviceMessenger = new Messenger(iBinder);
-        }
+    private LoginBroadcastReceiver broadcastReceiver;
+    private LocalBroadcastManager localBroadcastManager;
 
-        @Override
-        public void onServiceDisconnected(ComponentName componentName) {
-            serviceMessenger = null;
-        }
-    };
+    public static final String BROADCAST_RECEIVER_ACTION_NAME = "MainActivity";
+
 
     @SuppressLint("WrongConstant")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        progressDialog = new ProgressDialog(this);
         Properties properties = PropertiesUtils.getPropertes(getApplicationContext());
         login = (Button) findViewById(R.id.login);
         reg = findViewById(R.id.reg);
@@ -68,51 +62,70 @@ public class MainActivity extends BaseView {
         if(account != null)
             account.setText(lastAccount);
 
+        //开启服务
+        Intent startIntent = new Intent(this, LoginService.class);
+        startService(startIntent);
+
+
+
         login.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
+                showProgressDialog("登录中。。。");
                 CharSequence accountText = account.getText();  //获取账号
                 CharSequence passwordText = password.getText();//获取用户输入的密码
                 if(accountText.length() == 0) {
+                    shuntProgressDialog();
                     hintError("账号为空！");
                     return;
                 }
                 if(passwordText.length() == 0){
+                    shuntProgressDialog();
                     hintError("请输入密码！");
                     return;
                 }
-                Message msg = new Message();
-                Bundle bundle = new Bundle();
-                bundle.putCharSequence("account",accountText);
-                bundle.putCharSequence("password",passwordText);
-                msg.setData(bundle);
-                msg.what = 1;
-                Messenger client = new Messenger(new ClientHandler());
-                msg.replyTo = client;
-                try {
-                    serviceMessenger.send(msg);
-                } catch (RemoteException e) {
-                    e.printStackTrace();
-                }
+                Logger.d("发送登录信息给服务！！！！！！账号:" + accountText + "密码:" + passwordText);
+                //通过广播发送信息给服务
+                Intent intent = new Intent();
+                intent.putExtra("account",accountText);
+                intent.putExtra("password",passwordText);
+                intent.putExtra("invoke","login");
+                intent.setAction(LoginService.SERVICE_BROADCAST_RECEIVER_ACTION_NAME);
+                localBroadcastManager.sendBroadcast(intent);
             }
         });
+
         reg.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
+                showProgressDialog("正在打开注册界面。。。");
                 Intent intent = new Intent(MainActivity.this, RegisterActivity.class);
-                intent.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
                 startActivity(intent);
             }
         });
-        Intent intent = new Intent(MainActivity.this,LoginService.class);
-        bindService(intent,conn, Service.BIND_AUTO_CREATE);
+
 
     }
 
     @Override
-    public void onSaveInstanceState(Bundle outState, PersistableBundle outPersistentState) {
-        super.onSaveInstanceState(outState, outPersistentState);
+    protected void onResume() {
+        super.onResume();
+
+        //注册广播接收器
+        localBroadcastManager = LocalBroadcastManager.getInstance(this);
+        broadcastReceiver = new LoginBroadcastReceiver();
+        IntentFilter intentFilter = new IntentFilter();
+        intentFilter.addAction(BROADCAST_RECEIVER_ACTION_NAME);
+        localBroadcastManager.registerReceiver(broadcastReceiver,intentFilter);
     }
+
+    @Override
+    protected void onPause() {
+        localBroadcastManager.unregisterReceiver(broadcastReceiver);
+        shuntProgressDialog();
+        super.onPause();
+    }
+
 
 
     public String getAccount() {
@@ -124,44 +137,43 @@ public class MainActivity extends BaseView {
         return (String) password.getText();
     }
 
+    public class LoginBroadcastReceiver extends BroadcastReceiver{
 
-    private class ClientHandler extends Handler{
         @Override
-        public void handleMessage(Message msg) {
-            super.handleMessage(msg);
-            int resultState = msg.what;
-                            //msg.what;
-            Logger.d("接受到服务端返回："+msg.what);
+        public void onReceive(Context context, Intent intent) {
+            int resultState = intent.getIntExtra("resultState",3);
+            //msg.what;
+            Logger.d("接受到服务端返回：" + resultState);
 
             switch (resultState){
-                case 0:
+                case LoginService.ACCOUNT_NO_EXIST:
+                    shuntProgressDialog();
                     hintError("账号不存在！");
                     break;
-                case 1:
+                case LoginService.LOGIN_SUCCESS:
                     Logger.d("登录成功！");
                     editor.putString("lastAccount",account.getText().toString());//保存最近登录的账号
                     editor.commit();
-                    Intent intent = new Intent(MainActivity.this,VersionManagerActivity.class);
-                    startActivity(intent);
+                    Intent intent2 = new Intent(MainActivity.this,VersionManagerActivity.class);
+                    startActivity(intent2);
                     break;
-                case 2:
+                case LoginService.PASSWORD_ERROR:
+                    shuntProgressDialog();
                     hintError("密码错误！");
                     break;
             }
-
         }
     }
 
     @Override
     protected void onDestroy() {
-        super.onDestroy();
         Logger.d("login界面关闭！关闭服务连接");
-        unbindService(conn);
+        super.onDestroy();
     }
     public void hintError(String msg){
         new AlertDialog.Builder(this)
                 .setTitle("错误")
-                .setMessage("账号不存在")
+                .setMessage(msg)
                 .setPositiveButton("确定",null)
                 .show();
     }

@@ -84,66 +84,48 @@ public class DownloadManagerUtil {
         final FileInfo _fileInfo = fileInfo;
         Logger.d("开始下载文件：" + fileInfo.getFileName() + url);
 
-        Request request = new Request.Builder().url(url).header("Range", "bytes=" + fileInfo.getFinished() + "-" + fileInfo.getLength()).build();
-        Logger.d("设置请求头Range：" + "bytes=" + fileInfo.getFinished() + "-" + fileInfo.getLength());
+        Request request = new Request.Builder().url(url).header("Range", "bytes=" + fileInfo.getProgress() + "-" + fileInfo.getLength()).build();
+        Logger.d("设置请求头Range：" + "bytes=" + fileInfo.getProgress() + "-" + fileInfo.getLength());
         OkHttpClient client = new OkHttpClient();
         Call call = client.newCall(request);
 
-        //异步下载
-        call.enqueue(new Callback() {
-            @Override
-            public void onFailure(Call call, IOException e) {
+        ResponseBody body = null;
+        try {
+            body = call.execute().body();
+            Source source = null;
+            BufferedSource bufferedSource = null;
+            String mSDCardPath = Environment.getExternalStorageDirectory().getPath();
+            File dest = new File(mSDCardPath, url.substring(url.lastIndexOf("/") + 1));
 
+            RandomAccessFile raf = new RandomAccessFile(dest, "rwd");
+            raf.seek(_fileInfo.getProgress());//从文件已经下载完成处开始读取
+            /*
+            hanel NIO中的用法，由于RandomAccessFile没有使用缓存策略，直接使用会使得下载速度变慢，亲测缓存下载3.3秒的文件，用普通的RandomAccessFile需要20多秒。
+            FileChannel channelOut = raf.getChannel();
+             内存映射，直接使用RandomAccessFile，是用其seek方法指定下载的起始位置，使用缓存下载，在这里指定下载位置。
+            MappedByteBuffer mappedBuffer = channelOut.map(FileChannel.MapMode.READ_WRITE, _fileInfo.getFinished(), body.contentLength());
+           **/
+            // sink = Okio.sink(raf.);
+            // bufferedSink = Okio.buffer;
+            source = body.source();
+            bufferedSource = Okio.buffer(source);
+            byte[] b = new byte[1024 * 8];
+            int len = 0;
+            while ((len = bufferedSource.read(b)) != -1) {
+                if (_fileInfo.isStop())
+                    break;
+                raf.write(b, 0, len);
+                _fileInfo.addProgress(len);
             }
-
-            @Override
-            public void onResponse(Call call, Response response) throws IOException {
-                try {
-                    //Sink sink = null;
-                    ResponseBody body = response.body();
-                    Source source = null;
-                    BufferedSource bufferedSource = null;
-                    String mSDCardPath = Environment.getExternalStorageDirectory().getPath();
-                    File dest = new File(mSDCardPath, url.substring(url.lastIndexOf("/") + 1));
-
-                    RandomAccessFile raf = new RandomAccessFile(dest, "rwd");
-                    raf.seek(_fileInfo.getFinished());//从文件已经下载完成处开始读取
-                    /*
-                    hanel NIO中的用法，由于RandomAccessFile没有使用缓存策略，直接使用会使得下载速度变慢，亲测缓存下载3.3秒的文件，用普通的RandomAccessFile需要20多秒。
-                    FileChannel channelOut = raf.getChannel();
-                     内存映射，直接使用RandomAccessFile，是用其seek方法指定下载的起始位置，使用缓存下载，在这里指定下载位置。
-                    MappedByteBuffer mappedBuffer = channelOut.map(FileChannel.MapMode.READ_WRITE, _fileInfo.getFinished(), body.contentLength());
-                   **/
-                    // sink = Okio.sink(raf.);
-                    // bufferedSink = Okio.buffer;
-                    source = body.source();
-                    bufferedSource = Okio.buffer(source);
-                    byte[] b = new byte[1024 * 8];
-                    int len = 0;
-                    while ((len = bufferedSource.read(b)) != -1) {
-                        if (_fileInfo.isStop())
-                            break;
-                        //mappedBuffer.put(b,0,len);
-                        raf.write(b, 0, len);
-                        //bufferedSink.write(b, 0, len);
-                        _fileInfo.addFinished(len);
-                    }
-                    _fileInfo.setStop(true);
-                    Logger.d("源文件大小/下载字节数：" + dest.length() + "/" + _fileInfo.getFinished());
-                    Logger.d("写入结束！！！！！");
-                    source.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-        });
-
-
+            _fileInfo.setStop(true);
+            Logger.d("源文件大小/下载字节数：" + dest.length() + "/" + _fileInfo.getProgress());
+            Logger.d("写入结束！！！！！");
+            source.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
-    public FileInfo getFileInfo() {
-        return fileInfo;
-    }
 
     /**
      * 另外开辟一条连接获取文件长度
@@ -151,21 +133,13 @@ public class DownloadManagerUtil {
     public static void getFileLength(final FileInfo fileInfo) {
         Request request = new Request.Builder().url(fileInfo.getUrl()).build();
         OkHttpClient client = new OkHttpClient();
-
-        client.newCall(request)
-                .enqueue(new Callback() {
-                    @Override
-                    public void onFailure(Call call, IOException e) {
-
-                    }
-
-                    @Override
-                    public void onResponse(Call call, Response response) throws IOException {
-                        fileInfo.setLength((int) response.body().contentLength());
-                        Logger.d("获取文件大小:" + fileInfo.getLength());
-                    }
-                });
-
+        ResponseBody responseBody = null;
+        try {
+            responseBody = client.newCall(request).execute().body();
+            fileInfo.setLength((int) responseBody.contentLength());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 }
 

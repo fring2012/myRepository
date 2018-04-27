@@ -18,14 +18,14 @@ public class FileInfo  {
     @Column(cname = "length")
     private int length = 0;//文件大小
 
-    @Column(cname = "finished")
-    private int finished = 0;//下载以已完成进度
+    @Column(cname = "progress")
+    private int progress = 0;//下载以已完成进度
 
     @Column(cname = "is_stop")
     private boolean isStop = false;//是否暂停下载
 
     @Column(cname = "is_downloading")
-    private boolean isDownLoading = false;//是否下载到一半 false代表下载完成 或者 代表要下的信息和数据库不一致需要重新下载
+    private boolean isDownLoading = true;//是否下载到一半 false代表下载完成 或者 代表要下的信息和数据库不一致需要重新下载
 
     @Column(cname = "md5sum")
     private String md5sum;//文件的md5值
@@ -54,16 +54,16 @@ public class FileInfo  {
         this.length = length;
     }
 
-    public int getFinished() {
-        return finished;
+    public int getProgress() {
+        return progress;
     }
 
-    public void setFinished(int finished) {
-        this.finished = finished;
+    public void setProgress(int finished) {
+        this.progress = finished;
     }
 
-    public void addFinished(int length){
-        finished += length;
+    public void addProgress(int length){
+        progress += length;
     }
     public boolean isStop() {
         return isStop;
@@ -96,7 +96,7 @@ public class FileInfo  {
         return "fileName:" + fileName
                + "; url:" + url
                + "; length:" + length
-               + "; finished:" + finished
+               + "; progress:" + progress
                + "; isStop:" + isStop
                + "; isDownLoading:" +isDownLoading
                 +"; md5:" + md5sum;

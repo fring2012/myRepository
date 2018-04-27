@@ -21,7 +21,9 @@ import android.widget.Toast;
 import com.example.c.appdemo.R;
 import com.example.c.presenter.Presenter.IVersionPresenter;
 import com.example.c.presenter.PresenterImpl.VersionPresenter;
+import com.example.c.service.VersionService;
 import com.example.c.ui.activity.common.BaseView;
+import com.example.c.utils.PermissionUtil;
 import com.orhanobut.logger.Logger;
 
 import java.security.SecureRandom;
@@ -52,6 +54,7 @@ public class VersionManagerActivity extends BaseView {
 
 
 
+
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -68,7 +71,7 @@ public class VersionManagerActivity extends BaseView {
         versionInfo = (TextView) findViewById(R.id.versionInfo);
 
         versionPresenter = new VersionPresenter();
-        versionPresenter.setActivity(this);
+        versionPresenter.setView(this);
 
 
 
@@ -80,28 +83,28 @@ public class VersionManagerActivity extends BaseView {
         check.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                //检查是否有网络权限
+                //检查是否有读写权限
                 if (ActivityCompat.checkSelfPermission(VersionManagerActivity.this, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
                     ActivityCompat.requestPermissions(VersionManagerActivity.this, new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, 2);
                     return;
                 }
-                showProgressDialog("正在检测最新版本！");
-                versionPresenter.checkLatestVesion();
-                shuntProgressDialog();
+                checkLatestVersion();
+
             }
         });
 
         down.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                //检查是否有权限
+                //检查是否有读写权限
                 if (ActivityCompat.checkSelfPermission(VersionManagerActivity.this, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
                     ActivityCompat.requestPermissions(VersionManagerActivity.this, new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, 2);
                     return;
                 }
+                //检测版本更新
+                checkLatestVersion();
                 //下载文件
-                versionPresenter.downloadLaterVersionFile();
-
+                startVersionService(VersionService.DOWNLOAD_LATEST_VERSION_TASK);
                 down.setVisibility(View.GONE);//将下载按钮隐藏
                 stop.setVisibility(View.VISIBLE);//显示暂停按钮
                 downloadList.setVisibility(View.VISIBLE);
@@ -119,7 +122,7 @@ public class VersionManagerActivity extends BaseView {
         up.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-//                versionPresenter.upVersion();
+ //               versionPresenter.upVersion();
             }
         });
 
@@ -143,11 +146,36 @@ public class VersionManagerActivity extends BaseView {
                 return;
             }else {
                 //设备注册
-                versionPresenter.deviceRegister();
+                deviceRegisterTask();
             }
         }
     }
 
+    /**
+     * 检查更新！！
+     */
+    private void checkLatestVersion(){
+        showProgressDialog("正在检测最新版本！");
+        startVersionService(VersionService.CHECK_LATEST_VERSION_TASK);
+    }
+    /**
+     * 设备注册
+     */
+    private void deviceRegisterTask(){
+        showProgressDialog("正在注册设备。。。");
+        //设备注册
+        startVersionService(VersionService.DEVICE_REGISTER_TASK);
+    }
+    /**
+     * 开启VersionService
+     * @param task
+     */
+    public void startVersionService(String task){
+        Intent intent = new Intent(VersionManagerActivity.this, VersionService.class);
+        VersionService.initContext(VersionManagerActivity.this);
+        intent.putExtra("task",task);
+        startService(intent);
+    }
     /**
      * 初始化进度条进度和最大值
      * @param max
@@ -180,6 +208,7 @@ public class VersionManagerActivity extends BaseView {
     public void setLatestVersion(String latestVersion){
         versionInfo.setText("最新版本号:"+latestVersion);
     }
+
 
 
 
@@ -231,7 +260,7 @@ public class VersionManagerActivity extends BaseView {
                 return;
             }else {
                 //设备注册
-                versionPresenter.deviceRegister();
+                deviceRegisterTask();
             }
         }
         if (requestCode == 2){
@@ -243,7 +272,7 @@ public class VersionManagerActivity extends BaseView {
                 return;
             }
             //设备注册
-            versionPresenter.deviceRegister();
+            deviceRegisterTask();
 
         }
     }
@@ -254,6 +283,12 @@ public class VersionManagerActivity extends BaseView {
                 .setPositiveButton("确定",null)
                 .show();
     }
+
+
+    public IVersionPresenter getVersionPresenter() {
+        return versionPresenter;
+    }
+
 
     /**
      * 默认信任所有的证书

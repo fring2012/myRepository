@@ -18,20 +18,20 @@ public class BasePresenter<V extends BaseView> implements Presenter<V> {
     }
 
     @Override
-    public void setActivity(V activity) {
-        this.activityView = activity;
+    public void setView(V view) {
+        this.activityView = view;
 
     }
 
     @Override
-    public V getActivity() {
+    public V getView() {
         chechViewAttach();
         return activityView;
     }
 
 
     @Override
-    public void detachActivity() {
+    public void detachView() {
         activityView = null;
     }
 

@@ -5,16 +5,16 @@ import com.example.c.ui.activity.common.BaseView;
 public interface Presenter <V extends BaseView>{
     /**
      * 绑定activity
-     * @param activity
+     * @param view
      * @return
      */
-    void setActivity(V activity);
+    void setView(V view);
     /**
      * 获取activity
      */
-    V getActivity();
+    V getView();
     /**
      * 解除绑定的activity
      */
-    void detachActivity();
+    void detachView();
 }

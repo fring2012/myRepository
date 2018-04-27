@@ -28,17 +28,23 @@ public class PropertiesUtils {
         }
         return properties;
     }
-    public static String propertiesUrl(String msg){
+
+    public static String getString(String key){
+        String value = properties.getProperty(key);
+        value = propertiesUrl(value);
+        return value;
+    }
+    public static String propertiesUrl(String value){
         if (properties == null)
             throw new RuntimeException( "请先调用getPropertes(Context context)方法初始化properties");
-        List<String> list = StringUtil.extractMessageByRegular(msg);
+        List<String> list = StringUtil.extractMessageByRegular(value);
         String str;
         for (String s: list) {
             String param = properties.getProperty(s);
             if(param == null)
                 throw new RuntimeException(s + "参数不存在");
-            msg = msg.replace("{" + s + "}",param);
+            value = value.replace("{" + s + "}",param);
         }
-        return msg;
+        return value;
     }
 }

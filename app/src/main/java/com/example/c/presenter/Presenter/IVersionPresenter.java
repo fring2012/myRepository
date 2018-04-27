@@ -13,12 +13,12 @@ public interface IVersionPresenter extends Presenter<VersionManagerActivity>{
     /**
      * 检测更新
      */
-    void checkLatestVesion();
+    void checkLatestVersion();
 
     /**
      * 下载最新版本文件
      */
-    void downloadLaterVersionFile();
+    void downloadLatestVersionFile();
 
     /**
      * 暂停下载

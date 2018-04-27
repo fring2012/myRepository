@@ -7,6 +7,9 @@ import android.content.pm.PackageManager;
 import android.os.Build;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
+import android.view.View;
+
+import com.example.c.ui.activity.activity.VersionManagerActivity;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -29,21 +32,8 @@ public class PermissionUtil {
         return false;
     }
 
-    @Target(ElementType.METHOD)//注解作用域名
-    @Retention(RetentionPolicy.RUNTIME)//注解有效时间
-    public @interface  PermissionHelper{
-        boolean permissionResult();
-        int requestCode();
-    }
 
-    public static void injectActivity(Activity activity,boolean permissionResult, int requestCode){
-        Class clazz = activity.getClass();
-        Method[] methods = clazz.getDeclaredMethods();
 
-        for(Method method : methods){
-            if(method.isAnnotationPresent(PermissionHelper.class)){
 
-            }
-        }
-    }
+
 }
