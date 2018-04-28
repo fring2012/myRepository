@@ -107,6 +107,6 @@ public class FileInfo  {
         return this.url.equals(fileInfo.getUrl()) &&
                 this.md5sum.equals(fileInfo.getMd5sum()) &&
                 this.length == fileInfo.getLength() &&
-                this.fileName.equals(fileInfo.getFileName());
+                this.fileName.equals(fileInfo.getFileName()) ;
     }
 }

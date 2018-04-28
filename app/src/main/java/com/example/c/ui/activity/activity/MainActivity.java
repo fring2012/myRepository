@@ -59,10 +59,8 @@ public class MainActivity extends BaseView {
         password = (TextView)findViewById(R.id.password);
         mainPresenter = new MainPresenter();
         mainPresenter.setView(this);
-
-        //开启服务
-        Intent startIntent = new Intent(this, LoginService.class);
-        startService(startIntent);
+        mainPresenter.initLastAccount();
+//
 
 
 
@@ -101,12 +99,12 @@ public class MainActivity extends BaseView {
 
 
     public String getAccount() {
-        return (String) account.getText();
+        return  account.getText().toString();
     }
 
 
     public String getPassword() {
-        return (String) password.getText();
+        return  password.getText().toString();
     }
 
 
@@ -127,4 +125,7 @@ public class MainActivity extends BaseView {
                 .setPositiveButton("确定",null)
                 .show();
     }
+
+
+
 }

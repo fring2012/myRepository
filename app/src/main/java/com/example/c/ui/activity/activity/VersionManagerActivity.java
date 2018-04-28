@@ -72,8 +72,8 @@ public class VersionManagerActivity extends BaseView {
 
         versionPresenter = new VersionPresenter();
         versionPresenter.setView(this);
-
-
+        versionPresenter.init();
+        versionPresenter.registerBroadcastReceiver();
 
 
 
@@ -104,7 +104,7 @@ public class VersionManagerActivity extends BaseView {
                 //检测版本更新
                 checkLatestVersion();
                 //下载文件
-                startVersionService(VersionService.DOWNLOAD_LATEST_VERSION_TASK);
+                versionPresenter.downloadLatestVersionFile();
                 down.setVisibility(View.GONE);//将下载按钮隐藏
                 stop.setVisibility(View.VISIBLE);//显示暂停按钮
                 downloadList.setVisibility(View.VISIBLE);
@@ -151,12 +151,18 @@ public class VersionManagerActivity extends BaseView {
         }
     }
 
+    @Override
+    protected void onDestroy() {
+        versionPresenter.unRegisterBroadcastReceiver();
+        super.onDestroy();
+    }
+
     /**
      * 检查更新！！
      */
     private void checkLatestVersion(){
         showProgressDialog("正在检测最新版本！");
-        startVersionService(VersionService.CHECK_LATEST_VERSION_TASK);
+        versionPresenter.checkLatestVersion();
     }
     /**
      * 设备注册
@@ -164,18 +170,9 @@ public class VersionManagerActivity extends BaseView {
     private void deviceRegisterTask(){
         showProgressDialog("正在注册设备。。。");
         //设备注册
-        startVersionService(VersionService.DEVICE_REGISTER_TASK);
+        versionPresenter.deviceRegister();
     }
-    /**
-     * 开启VersionService
-     * @param task
-     */
-    public void startVersionService(String task){
-        Intent intent = new Intent(VersionManagerActivity.this, VersionService.class);
-        VersionService.initContext(VersionManagerActivity.this);
-        intent.putExtra("task",task);
-        startService(intent);
-    }
+
     /**
      * 初始化进度条进度和最大值
      * @param max

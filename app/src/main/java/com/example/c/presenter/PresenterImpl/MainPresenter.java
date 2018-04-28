@@ -49,12 +49,14 @@ public class MainPresenter extends BasePresenter<MainActivity> implements IMainP
         intent.putExtra("password",passwordText);
         getView().startService(intent);
     }
-    @SuppressLint("WrongConstant")
+
+    /**
+     *
+     */
     public void initLastAccount(){
-        sp = getView().getPreferences(Context.MODE_APPEND);
-        editor = sp.edit();
-        String lastAccount = sp.getString("lastAccount",null);
-        getView().setAccountText(lastAccount);
+        String lastAccount = getSharedPreferences().getString("lastAccount",null);
+        if(lastAccount != null)
+             getView().setAccountText(lastAccount);
     }
 
     public void  registerBroadcastReceiver(){
@@ -87,9 +89,9 @@ public class MainPresenter extends BasePresenter<MainActivity> implements IMainP
                     getView().hintError("账号不存在！");
                     break;
                 case LoginService.LOGIN_SUCCESS:
-                    Logger.d("登录成功！");
-                    editor.putString("lastAccount",getView().getAccount());//保存最近登录的账号
-                    editor.commit();
+                    Logger.d("登录成功！" + getView());
+                    getEditor().putString("lastAccount",getView().getAccount());//保存最近登录的账号
+                    getEditor().commit();
                     Intent intent2 = new Intent(getView(),VersionManagerActivity.class);
                     getView().startActivity(intent2);
                     break;
@@ -99,5 +101,18 @@ public class MainPresenter extends BasePresenter<MainActivity> implements IMainP
                     break;
             }
         }
+    }
+
+    @SuppressLint("WrongConstant")
+    private SharedPreferences getSharedPreferences(){
+        if(sp == null)
+            sp = getView().getPreferences(Context.MODE_APPEND);
+        return sp;
+    }
+
+    private SharedPreferences.Editor getEditor(){
+        if(editor == null)
+            editor = getSharedPreferences().edit();
+        return editor;
     }
 }

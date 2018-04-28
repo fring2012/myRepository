@@ -30,18 +30,13 @@ public class FileDaoImpl extends BaseDao implements IFileInfoDao {
     @Override
     public FileInfo getFileInfo(String fileName){
         FileInfo dbFileInfo = null;
-        Cursor cursor = getCursor(fileName);
+        Cursor cursor = database.query("file_info", null,"file_name = ?", new String[]{fileName}, null, null,null);
         if(cursor.moveToNext())
             dbFileInfo =  getFileInfo(cursor);
         cursor.close();
         return dbFileInfo;
     }
 
-
-    private Cursor getCursor(String fileName){
-        Cursor cursor = database.query("file_info", null,"file_name = ?", new String[]{fileName}, null, null,null);
-        return cursor;
-    }
 
     @Override
     public int upDateFileInfoProgress(FileInfo fileInfo) {

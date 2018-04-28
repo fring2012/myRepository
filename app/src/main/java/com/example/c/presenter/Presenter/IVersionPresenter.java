@@ -6,6 +6,14 @@ import com.example.c.ui.activity.activity.VersionManagerActivity;
 
 public interface IVersionPresenter extends Presenter<VersionManagerActivity>{
     /**
+     * 注册广播
+     */
+    void registerBroadcastReceiver();
+    /**
+     * 注销广播
+     */
+    void unRegisterBroadcastReceiver();
+    /**
      * 设备注册
      */
     void deviceRegister();
@@ -33,4 +41,6 @@ public interface IVersionPresenter extends Presenter<VersionManagerActivity>{
      * 初始化手机版本信息
      */
     void init();
+
+
 }

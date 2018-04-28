@@ -41,7 +41,7 @@ public class RegisterPresenter extends BasePresenter<RegisterActivity> implement
             getView().hintError("请输入账号！");
             return;
         }
-        CharSequence passwordText = getView().getAgainPasswordText();
+        CharSequence passwordText = getView().getRegPasswordText();
         if(passwordText.length() == 0){
             getView().shuntProgressDialog();
             Logger.d("密码为空！");
@@ -56,7 +56,7 @@ public class RegisterPresenter extends BasePresenter<RegisterActivity> implement
             return;
         }
         Intent intent = new Intent(getView(),LoginService.class);
-        intent.putExtra("invoke","login");
+        intent.putExtra("invoke","register");
         intent.putExtra("account",accountText);
         intent.putExtra("password",passwordText);
         getView().startService(intent);
@@ -69,8 +69,9 @@ public class RegisterPresenter extends BasePresenter<RegisterActivity> implement
         public void onReceive(Context context, Intent intent) {
             int resultState = intent.getIntExtra("resultState",4);
             Logger.d("接收到服务端返回："+resultState);
+            getView().shuntProgressDialog();
             if(resultState == 0) {
-                getView().shuntProgressDialog();
+
                 getView().hintError("账号已经存在！");
                 return;
             }

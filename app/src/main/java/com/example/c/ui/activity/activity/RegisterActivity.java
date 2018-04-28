@@ -47,6 +47,7 @@ public class RegisterActivity extends BaseView{
         againPassword =(EditText)findViewById(R.id.again_password);
         register = (Button) findViewById(R.id.register);
         registerPresenter = new RegisterPresenter();
+        registerPresenter.setView(this);
         register.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -100,17 +101,17 @@ public class RegisterActivity extends BaseView{
                 .show();
     }
 
-    public CharSequence getRegAccountText() {
-        return regAccount.getText();
+    public String getRegAccountText() {
+        return regAccount.getText().toString();
     }
 
 
-    public CharSequence getRegPasswordText() {
-        return regPassword.getText();
+    public String getRegPasswordText() {
+        return regPassword.getText().toString();
     }
 
-    public CharSequence getAgainPasswordText() {
-        return againPassword.getText();
+    public String getAgainPasswordText() {
+        return againPassword.getText().toString();
     }
 
 

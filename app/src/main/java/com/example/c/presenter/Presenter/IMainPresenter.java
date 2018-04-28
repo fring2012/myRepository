@@ -18,4 +18,9 @@ public interface IMainPresenter extends Presenter<MainActivity> {
      * 登录
      */
     void login();
+
+    /**
+     *显示最后登录的账号
+     */
+    void initLastAccount();
 }
