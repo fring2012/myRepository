@@ -27,4 +27,5 @@ dependencies {
     api  'com.google.code.gson:gson:2.6.2'
     api  'com.android.support.test:runner:1.0.1'
     api  'com.android.support.test:rules:1.0.1'
+    implementation 'com.adups.iot:iot_libs:1.3.2'
 }

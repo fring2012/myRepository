@@ -72,7 +72,7 @@ public class VersionManagerActivity extends BaseView {
 
         versionPresenter = new VersionPresenter();
         versionPresenter.setView(this);
-        versionPresenter.init();
+
         versionPresenter.registerBroadcastReceiver();
 
 

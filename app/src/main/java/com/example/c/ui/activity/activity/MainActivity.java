@@ -25,6 +25,7 @@ import android.widget.Button;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
+import com.abupdate.iot_libs.info.DeviceInfo;
 import com.example.c.appdemo.R;
 import com.example.c.presenter.Presenter.IMainPresenter;
 import com.example.c.presenter.PresenterImpl.MainPresenter;
@@ -60,6 +61,7 @@ public class MainActivity extends BaseView {
         mainPresenter = new MainPresenter();
         mainPresenter.setView(this);
         mainPresenter.initLastAccount();
+        Logger.d("DeviceInfo:" + DeviceInfo.getInstance().toString());
 //
 
 
