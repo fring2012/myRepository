@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--http://www.jianshu.com/p/121bbb07cb07-->
+    <paths>
+        <root-path
+            name="root-path"
+            path="."/>
+        <files-path path="" name="camera_photos" />
+    </paths>
+</resources>

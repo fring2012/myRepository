@@ -1,0 +1,45 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+
+    package="com.abupdate.iot_libs">
+
+    <permission
+        android:name="permission.com.abupdate.fota.update"
+        android:protectionLevel="signature" />
+
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.RECOVERY" />
+    <uses-permission android:name="permission.com.abupdate.fota.update" />
+
+    <application
+        android:allowBackup="true"
+        android:label="@string/app_name"
+        android:supportsRtl="true">
+
+        <service android:name="com.abupdate.iot_libs.service.OtaService" />
+
+        <service
+            android:name="com.abupdate.iot_libs.service.JobSchedulerService"
+            android:exported="true"
+            android:permission="android.permission.BIND_JOB_SERVICE" />
+
+        <receiver android:name="com.abupdate.iot_libs.receiver.UpgradeReceiver">
+            <intent-filter android:priority="2147483647">
+                <action android:name="android.net.conn.CONNECTIVITY_CHANGE" />
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+            </intent-filter>
+        </receiver>
+
+        <receiver android:name=".receiver.MqttAlarmReceiver">
+            <intent-filter android:priority="2147483647">
+                <action android:name="com.abupdate.mqtt.action_connect" />
+                <action android:name="com.abupdate.mqtt.action_disconnect" />
+                <action android:name="com.abupdate.mqtt.action_reset_mqtt" />
+            </intent-filter>
+        </receiver>
+    </application>
+
+</manifest>

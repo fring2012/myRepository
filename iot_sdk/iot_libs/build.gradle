@@ -1,0 +1,181 @@
+apply plugin: 'com.android.library'
+def code = rootProject.ext.fotaLibVersion
+android {
+    compileSdkVersion 26
+
+    defaultConfig {
+        minSdkVersion 15
+        targetSdkVersion 26
+        versionCode 1
+        versionName code
+
+    }
+    buildTypes {
+        release {
+            minifyEnabled true
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+    }
+    lintOptions {
+        abortOnError false
+    }
+
+}
+
+dependencies {
+    compile 'com.android.support:appcompat-v7:26.0.0'
+    compile 'com.adups.iot:trace:1.0.4'
+//    compile 'com.adups.iot:mqtt_libs:1.1.3'
+//    compile 'com.adups.iot:iot_download_libs:1.1.8_pre4'
+//    compile 'com.adups.iot:http_libs:1.0.9_pre1'
+//   compile project(':trace')
+   compile project(':iot_download_libs')
+    compile project(':http_libs')
+    compile project(':mqtt_libs')
+}
+
+def zipFile = file('build/intermediates/bundles/release/classes.jar')
+def SDK_BASENAME = "iot_libs";
+def sdkJarPath = "build";
+
+task makeJar(type: Jar) {
+    from zipTree(zipFile)
+    from fileTree(dir: 'src/main', includes: ['assets/**'])
+    baseName = SDK_BASENAME
+    destinationDir = file(sdkJarPath)
+}
+makeJar.dependsOn(build)
+
+
+//apply plugin: 'com.github.dcendents.android-maven'
+//apply plugin: 'com.jfrog.bintray'
+//
+////发布到组织名称名字，必须填写
+//group = "com.adups.iot"
+////发布到JCenter上的项目名字，必须填写
+//def libName = "iport"
+//// 版本号，下次更新是只需要更改版本号即可
+//version = code
+///**  上面配置后上传至jcenter后的编译路径是这样的： compile 'com.abupdate.iot:iport:1.0.0'  **/
+//
+////生成源文件
+////task sourcesJar(type: Jar) {
+////    from android.sourceSets.main.java.srcDirs
+////    classifier = 'sources'
+////}
+////生成文档
+//task javadoc(type: Javadoc) {
+//    source = android.sourceSets.main.java.srcDirs
+//    classpath += project.files(android.getBootClasspath().join(File.pathSeparator))
+//    options.encoding "UTF-8"
+//    options.charSet 'UTF-8'
+//    options.author true
+//    options.version true
+//    failOnError false
+//}
+//
+////文档打包成jar
+//task javadocJar(type: Jar, dependsOn: javadoc) {
+//    classifier = 'javadoc'
+//    from javadoc.destinationDir
+//}
+//
+//task sourcesJar(type: Jar) {
+//    Set<File> files = android.sourceSets.main.java.srcDirs
+//    File genRes =file("build/genRes/com/abupdate/iot_libs")
+//    delete("build/genRes/com/abupdate/iot_libs")
+//    genRes.mkdirs()
+//    for (File file : files) {
+//        File[] f = file.listFiles()
+//        for (int i = 0; i < f.length; i++) {
+//            listFile(f[i],genRes)
+//        }
+//    }
+//
+//    from file("build/genRes/")
+//
+//    classifier = 'sources'
+//}
+//
+//Set<File> listFile(File file,File genRes) {
+//    if(file.getName() == "OtaAgentPolicy.java" ||
+//            file.getName() == "MqttAgentPolicy.java" ||
+//            file.getName() == "IndirectOtaAgentPolicy.java" ||
+//            file.getName() == "LogManager.java"){
+//        copy {
+//            from(file.getAbsolutePath())
+//            into(genRes.getAbsolutePath())
+//        }
+//    }
+//
+//    if(file.getName() == "info" || file.getName() == "inter" || file.getName() == "constant" || file.getName() == "policy"){
+//        copy {
+//            from(file.getAbsolutePath())
+//            into(genRes.getAbsolutePath()+"/${file.getName()}")
+//        }
+//
+//        if (file.getName() == "constant"){
+//            delete(genRes.getAbsolutePath()+"/${file.getName()}/OtaConstants.java",genRes.getAbsolutePath()+"/${file.getName()}/SDKConfig.java")
+//        }
+//
+//        if(file.getName() == "info"){
+//            delete(genRes.getAbsolutePath()+"/${file.getName()}/ProductInfo.java",genRes.getAbsolutePath()+"/${file.getName()}/SafeInfo.java")
+//        }
+//    }
+//
+//    if(file.isDirectory()){
+//        File[] ff = file.listFiles()
+//        for(File f:ff){
+//            listFile(f,genRes)
+//        }
+//    }
+//}
+//
+////拷贝javadoc文件
+//task copyDoc(type: Copy) {
+//    from "${buildDir}/docs/"
+//    into "docs"
+//}
+//
+////上传到jcenter所需要的源码文件
+//artifacts {
+//    archives javadocJar
+//    archives sourcesJar
+//}
+//
+//// 配置maven库，生成POM.xml文件
+//install {
+//    repositories.mavenInstaller {
+//        // This generates POM.xml with proper parameters
+//        pom {
+//            project {
+//                packaging 'aar'
+//                name 'This is iot sdk'
+//                developers {
+//                    developer {
+//                        id 'yangmai'
+//                        name 'yangmai'
+//                        email 'yangdongsheng@abupdate.com'
+//                    }
+//                }
+//            }
+//        }
+//    }
+//}
+//
+////上传到jcenter
+//Properties properties = new Properties()
+//properties.load(project.rootProject.file('local.properties').newDataInputStream())
+//bintray {
+//    user = properties.getProperty("bintray.user")    //读取 local.properties 文件里面的 bintray.user
+//    key = properties.getProperty("bintray.apikey")   //读取 local.properties 文件里面的 bintray.apikey
+//    configurations = ['archives']
+//    pkg {
+//        userOrg = "adups-iot"
+//        repo = "iot_sdk"
+//        name = libName    //发布到JCenter上的项目名字，必须填写
+//        desc = 'This is a iot sdk iport'    //项目描述
+//        licenses = ["Apache-2.0"]
+//        publish = true
+//    }
+//}

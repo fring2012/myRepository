@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout android:id="@+id/leaf_view_group"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:layout_gravity="right"
+    xmlns:android="http://schemas.android.com/apk/res/android">
+    <com.example.administrator.ui_make.ui.branchview.pieceview.ScaleCircleView
+        android:id="@+id/leaf_scale_circle_view"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_centerVertical="true"
+        android:visibility="visible"/>
+    <ImageView
+        android:id="@+id/leaf_image_view"
+        android:layout_width="match_parent"
+        android:layout_height="35dp"
+        android:layout_centerVertical="true"
+        android:visibility="visible"
+        android:src="@drawable/ic_action_name"/>
+    <com.example.administrator.ui_make.ui.branchview.pieceview.RoundProgressView
+        android:id="@+id/leaf_round_progress"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_centerVertical="true"/>
+    <TextView
+        android:id="@+id/leaf_text_view"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:textSize="12dp"
+        android:text="60%"
+        android:gravity="center"
+        android:textColor="@color/white"/>
+</RelativeLayout>

@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout
+    android:layout_width="350dp"
+    android:layout_height="40dp"
+    android:layout_gravity="center_horizontal"
+    xmlns:android="http://schemas.android.com/apk/res/android">
+    <com.example.administrator.ui_make.ui.branchview.pieceview.RoundTextView
+        android:id="@+id/round_text_view"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:text="  ECU (2.0版本)"
+        android:fontFamily=""
+        android:textColor="@color/white"
+        android:textSize="25dp"
+        android:gravity="center_vertical"/>
+    <com.example.administrator.ui_make.ui.branchview.viewgroup.LeafViewGroup
+        android:id="@+id/leaf_view_group"
+        android:layout_width="40dp"
+        android:layout_height="match_parent"
+        android:layout_gravity="right">
+    </com.example.administrator.ui_make.ui.branchview.viewgroup.LeafViewGroup>
+
+</FrameLayout>
