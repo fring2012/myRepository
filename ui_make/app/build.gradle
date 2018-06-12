@@ -9,11 +9,7 @@ android {
             storePassword '123456'
         }
     }
-    sourceSets{
-        main {
-            java.srcDirs = ['src/main/java']
-        }
-    }
+
     compileSdkVersion 27
     defaultConfig {
         applicationId "com.example.administrator.ui_make"
