@@ -35,44 +35,11 @@ public class MainActivity extends BaseActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        Uri.fromFile(new File(""));
-
-
-
-
-        branchViewGroup.setLeafListener(new LeafOnClickListener(){
-
-;            @Override
-            public void checkVersion() {
-                Log.d(TAG,"checkVersion()");
-                Intent intent = new Intent();
-                intent.setComponent(new ComponentName("com.example.administrator.apk_up_receiver",
-                        "com.example.administrator.apk_up_receiver.receiver.ApkUpInfoReceiver"));
-                intent.setAction("receiver.ApkUpInfoReceiver");
-                intent.addFlags(Intent.FLAG_INCLUDE_STOPPED_PACKAGES);
-                sendBroadcast(intent);
-                Log.d(TAG,"checkVersion(111)");
-            }
-
-            @Override
-            public void downloadVersion() {
-                branchViewGroup.setState(LeafViewGroup.UPGRADE_VERSION);
-                branchViewGroup.setText("下载中");
-                branchViewGroup.setProgress(60);
-            }
-
-            @Override
-            public void rebootUpgrade() {
-                branchViewGroup.setState(LeafViewGroup.CHECK_VERSION);
-                branchViewGroup.setFinished();
-            }
-        });
     }
 
     @Override
     public int getContentViewId() {
         return R.layout.activity_main;
     }
-
 
 }

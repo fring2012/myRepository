@@ -54,8 +54,5 @@ public interface IUpgradeView {
     IUpgradeView setLeafListener(LeafOnClickListener listener);
 
 
-    /*
-    *
-     */
-    void setState(int state);
+
 }
